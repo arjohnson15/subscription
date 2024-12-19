@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JohnsonFlix Subscription Management System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'Cyber';
+      src: url('https://assets.codepen.io/605876/Blender-Pro-Bold.otf');
+      font-display: swap;
+    }
+
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: 'Orbitron', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      min-height: 100vh;
+      text-align: center;
+      padding-top: 40px;
+    }
+
+    .logo {
+      width: 200px;
+      margin-bottom: 5px;
+    }
+
+    .name-logo {
+      width: 400px;
+      margin-bottom: 0;
+    }
+
+    .subtitle {
+      font-size: 1.6rem;
+      color: #22bdee;
+      text-shadow: 0 0 3px #22bdee;
+      margin: 5px 0 20px;
+    }
+
+    .button-container {
+      display: flex;
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    /* Cyberpunk Button Styles */
+    .cybr-btn {
+      position: relative;
+      display: inline-block;
+      padding: 10px 30px;
+      color: white;
+      font-size: 18px;
+      text-transform: uppercase;
+      font-family: 'Cyber', sans-serif;
+      background: #b833ff;
+      border: 2px solid #22bdee;
+      text-decoration: none;
+      cursor: pointer;
+      overflow: hidden;
+      transition: 0.2s ease-in-out;
+    }
+
+    .cybr-btn:hover {
+      background: #22bdee;
+      color: black;
+    }
+
+    .cybr-btn:before, .cybr-btn:after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: #22bdee;
+      z-index: -1;
+      transform: translateY(100%);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .cybr-btn:after {
+      background: #b833ff;
+      transform: translateY(-100%);
+    }
+
+    .cybr-btn:hover:before, .cybr-btn:hover:after {
+      transform: translateY(0);
+    }
+
+    .cybr-btn__glitch {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #22bdee;
+      color: black;
+      clip-path: inset(0 0 100% 0);
+      animation: glitch 0.8s infinite ease-in-out alternate;
+      display: none;
+    }
+
+    .cybr-btn:hover .cybr-btn__glitch {
+      display: block;
+    }
+
+    .expiring-section {
+      width: 80%;
+      padding: 15px;
+      margin-top: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid #22bdee;
+      border-radius: 8px;
+    }
+
+    .expiring-section h2 {
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+      color: #b833ff;
+      text-shadow: 0 0 5px #b833ff;
+    }
+
+    .expiring-section ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      color: white;
+    }
+
+    .expiring-section li {
+      font-size: 1.2rem;
+      padding: 5px 0;
+    }
+
+    @keyframes glitch {
+      0% { clip-path: inset(0 0 100% 0); }
+      20% { clip-path: inset(10% 0 80% 0); }
+      40% { clip-path: inset(20% 0 60% 0); }
+      60% { clip-path: inset(10% 0 70% 0); }
+      80% { clip-path: inset(5% 0 85% 0); }
+      100% { clip-path: inset(0 0 100% 0); }
+    }
+
+  </style>
+</head>
+<body>
+  <img src="./images/logo_full.png" alt="Logo" class="logo">
+
+  <img src="./images/name_logo.png" alt="JohnsonFlix" class="name-logo">
+  <h2 class="subtitle">Subscription Management System</h2>
+
+  <div class="button-container">
+    <a href="users.html" class="cybr-btn">
+      Manage Users
+      <span aria-hidden="true" class="cybr-btn__glitch">Manage Users</span>
+    </a>
+
+    <a href="subscriptions.html" class="cybr-btn">
+      Manage Subscriptions
+      <span aria-hidden="true" class="cybr-btn__glitch">Manage Subscriptions</span>
+    </a>
+
+    <a href="email-manager.html" class="cybr-btn">
+      Email Manager
+      <span aria-hidden="true" class="cybr-btn__glitch">Email Manager</span>
+    </a>
+  </div>
+
+  <div class="expiring-section">
+    <h2>Expiring This Month</h2>
+    <ul id="expiringList">
+      <li>No subscriptions expiring this month.</li>
+    </ul>
+  </div>
+
+<script>
+async function loadExpiringThisMonth() {
+  const mockData = [
+    { user: "John Doe", subscription: "Premium", nextRenewalDate: "2024-12-31" }
+  ];
+
+  const expiringList = document.getElementById('expiringList');
+  expiringList.innerHTML = mockData.map(sub => `
+    <li>
+      <strong>${sub.user}</strong>: ${sub.subscription} expires on 
+      ${new Date(sub.nextRenewalDate).toLocaleDateString()}
+    </li>
+  `).join('');
+}
+
+loadExpiringThisMonth();
+</script>
+
+</body>
+</html>
+
+
+
+<script>
+// Load Expiring Subscriptions
+async function loadExpiringThisMonth() {
+  try {
+    const res = await fetch('/subscriptions/expiring-this-month');
+    if (!res.ok) throw new Error('Failed to fetch expiring subscriptions');
+
+    const subscriptions = await res.json();
+    const expiringList = document.getElementById('expiringList');
+
+    if (subscriptions.length === 0) {
+      expiringList.innerHTML = '<li>No subscriptions expiring this month.</li>';
+    } else {
+      expiringList.innerHTML = subscriptions.map(sub => `
+        <li>
+          <strong>${sub.User.name}</strong>: ${sub.Subscription.name} expires on 
+          ${new Date(sub.nextRenewalDate).toLocaleDateString()}
+        </li>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error fetching expiring subscriptions:', error);
+    document.getElementById('expiringList').innerHTML = '<li>Error loading data.</li>';
+  }
+}
+
+// Initialize
+loadExpiringThisMonth();
+</script>
+</body>
+</html>

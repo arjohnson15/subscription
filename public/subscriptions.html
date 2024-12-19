@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Subscriptions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'Cyber';
+      src: url('https://assets.codepen.io/605876/Blender-Pro-Bold.otf');
+      font-display: swap;
+    }
+
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: 'Orbitron', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+      padding-top: 40px;
+    }
+
+    .name-logo {
+      width: 400px;
+      margin-bottom: 0;
+    }
+
+    .gradient-text {
+      font-size: 2rem;
+      background: linear-gradient(to top, #b833ff, #22bdee);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 20px 0 30px;
+    }
+
+    .button-container {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .cybr-btn {
+      padding: 6px 16px;
+      color: white;
+      font-size: 14px;
+      text-transform: uppercase;
+      font-family: 'Cyber', sans-serif;
+      background: #b833ff;
+      border: 2px solid #22bdee;
+      text-decoration: none;
+      cursor: pointer;
+      transition: 0.2s ease-in-out;
+    }
+
+    .cybr-btn:hover {
+      background: #22bdee;
+      color: black;
+    }
+
+    form {
+      margin-top: 20px;
+      width: 60%;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 30px;
+      border: 1px solid #22bdee;
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    label {
+      font-size: 1.2rem;
+      display: block;
+      margin: 10px 0 5px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      background: #333;
+      color: white;
+      border: 1px solid #22bdee;
+      border-radius: 4px;
+      font-family: Arial, sans-serif;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+    }
+
+    button[type="submit"] {
+      background: #b833ff;
+      color: white;
+      font-size: 1.2rem;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s ease-in-out;
+      margin-top: 15px;
+      width: 100%;
+    }
+
+    button[type="submit"]:hover {
+      background: #22bdee;
+      color: black;
+    }
+
+    table {
+      width: 80%;
+      margin: 20px 0 40px;
+      border-collapse: collapse;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid #22bdee;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 1rem;
+      border: 1px solid #22bdee;
+    }
+
+    th {
+      background: #b833ff;
+      font-family: 'Cyber', sans-serif;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <img src="./images/name_logo.png" alt="JohnsonFlix" class="name-logo">
+  <h2 class="gradient-text">Manage Subscriptions</h2>
+
+  <div class="button-container">
+    <a href="index.html" class="cybr-btn">Home</a>
+    <a href="users.html" class="cybr-btn">Manage Users</a>
+  </div>
+
+  <form id="createSubscriptionForm">
+    <label>Name:</label>
+    <input type="text" id="subscriptionName" required>
+
+    <label>Subscription Type:</label>
+    <select id="subscriptionType" required>
+      <option value="Plex">Plex</option>
+      <option value="IPTV">IPTV</option>
+    </select>
+
+    <label>Duration (Months):</label>
+    <select id="renewalPeriodMonths" required>
+      <option value="1">1</option>
+      <option value="3">3</option>
+      <option value="6">6</option>
+      <option value="12">12</option>
+    </select>
+
+    <div id="streamsField" style="display: none;">
+      <label>Number of Streams:</label>
+      <select id="numberOfStreams">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+
+    <button type="submit">Save Subscription</button>
+  </form>
+
+  <table id="subscriptionsTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Duration (Months)</th>
+        <th>Streams</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+<script>
+const subscriptionsTable = document.getElementById('subscriptionsTable').querySelector('tbody');
+const subscriptionType = document.getElementById('subscriptionType');
+
+// Toggle Streams Field Visibility
+subscriptionType.addEventListener('change', () => {
+  const isIptv = subscriptionType.value === 'IPTV';
+  document.getElementById('streamsField').style.display = isIptv ? 'block' : 'none';
+});
+
+// Load Subscriptions
+async function loadSubscriptions() {
+  try {
+    const res = await fetch('/subscriptions');
+    if (!res.ok) throw new Error('Failed to load subscriptions');
+
+    const subscriptions = await res.json();
+    subscriptionsTable.innerHTML = '';
+
+    subscriptions.forEach(sub => {
+      const numberOfStreams = sub.type === 'IPTV' ? sub.streams || 'N/A' : 'N/A';
+
+      const tr = document.createElement('tr');
+      tr.id = `subscription-${sub.id}`;
+      tr.innerHTML = `
+        <td>${sub.name}</td>
+        <td>${sub.type || 'N/A'}</td>
+        <td>${sub.renewalPeriodMonths}</td>
+        <td>${numberOfStreams}</td>
+        <td>
+          <button onclick="deleteSubscription(${sub.id})">Delete</button>
+        </td>
+      `;
+      subscriptionsTable.appendChild(tr);
+    });
+  } catch (error) {
+    console.error('Error loading subscriptions:', error);
+  }
+}
+
+// Save Subscription
+document.getElementById('createSubscriptionForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const payload = {
+    name: document.getElementById('subscriptionName').value,
+    type: subscriptionType.value,
+    renewalPeriodMonths: parseInt(document.getElementById('renewalPeriodMonths').value),
+    streams: subscriptionType.value === 'IPTV' ? parseInt(document.getElementById('numberOfStreams').value) : null
+  };
+
+  try {
+    const res = await fetch('/subscriptions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Failed to save subscription');
+
+    document.getElementById('createSubscriptionForm').reset();
+    document.getElementById('streamsField').style.display = 'none';
+    loadSubscriptions();
+  } catch (error) {
+    console.error('Error saving subscription:', error);
+  }
+});
+
+// Delete Subscription
+async function deleteSubscription(subscriptionId) {
+  if (confirm('Are you sure you want to delete this subscription?')) {
+    try {
+      const res = await fetch(`/subscriptions/${subscriptionId}`, { method: 'DELETE' });
+      if (res.ok) document.getElementById(`subscription-${subscriptionId}`).remove();
+    } catch (error) {
+      console.error('Error deleting subscription:', error);
+    }
+  }
+}
+
+loadSubscriptions();
+</script>
+</body>
+</html>

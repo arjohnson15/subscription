@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Users</title>
+  <link href="https://fonts.googleapis.com/css2?family=Arial:wght@400&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .name-logo {
+      width: 400px;
+      margin-bottom: 10px;
+    }
+
+    .gradient-text {
+      font-size: 2rem;
+      background: linear-gradient(to top, #b833ff, #22bdee);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 20px 0 30px;
+    }
+
+    .button-container {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+
+    .cybr-btn {
+      padding: 8px 25px;
+      color: white;
+      font-size: 16px;
+      background: #b833ff;
+      border: 2px solid #22bdee;
+      text-decoration: none;
+      cursor: pointer;
+      transition: 0.2s ease-in-out;
+    }
+
+    .cybr-btn:hover {
+      background: #22bdee;
+      color: black;
+    }
+
+    table {
+      width: 80%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid #22bdee;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      text-align: center;
+      color: white;
+      font-size: 0.9rem;
+      border: 1px solid #22bdee;
+    }
+
+    th {
+      background: #b833ff;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .tag-icon {
+      width: 20px;
+      height: 20px;
+      vertical-align: middle;
+    }
+
+    .free-text {
+      color: #E5A00D;
+      font-weight: bold;
+    }
+
+    #userInfoModal {
+      display: none;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: black;
+      border: 3px solid #b833ff;
+      border-radius: 8px;
+      padding: 25px 20px;
+      width: 400px;
+      color: white;
+      z-index: 9999;
+      text-align: left;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      position: absolute;
+      top: 10px;
+      right: 15px;
+    }
+
+    .modal-header {
+      font-size: 1.5rem;
+      color: #b833ff;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .modal-section-title {
+      color: #b833ff;
+      font-size: 1.3rem;
+      margin: 15px 0 10px;
+      text-decoration: underline;
+    }
+
+    .modal-content p {
+      margin: 8px 0;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <img src="./images/name_logo.png" alt="JohnsonFlix" class="name-logo">
+  <h2 class="gradient-text">Manage Users</h2>
+
+  <div class="button-container">
+    <a href="index.html" class="cybr-btn">Home</a>
+    <a href="subscriptions.html" class="cybr-btn">Manage Subscriptions</a>
+    <a href="create-user.html" class="cybr-btn">Create New User</a>
+    <a href="email-manager.html" class="cybr-btn">Email Manager</a>
+  </div>
+
+  <table id="usersTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Owner</th>
+        <th>Tags</th>
+        <th>Plex Expiration</th>
+        <th>IPTV Expiration</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Dynamic content will load here -->
+    </tbody>
+  </table>
+
+  <!-- Corrected Modal Window -->
+  <div id="userInfoModal">
+    <button class="close-btn" onclick="closeUserInfoModal()">×</button>
+    <h3 class="modal-header">User Information</h3>
+    <p><strong>Name:</strong> <span id="infoName"></span></p>
+    <p><strong>Email:</strong> <span id="infoEmail"></span></p>
+    <p><strong>Owner:</strong> <span id="infoOwner"></span></p>
+    <p><strong>Tags:</strong> <span id="infoTagsText"></span></p>
+
+    <div class="modal-section-title">Subscriptions</div>
+    <p><strong>Plex Subscription:</strong> <span id="infoPlexName"></span></p>
+    <p><strong>Plex Expiration Date:</strong> <span id="infoPlexExpiration"></span></p>
+    <p><strong>IPTV Subscription:</strong> <span id="infoIptvName"></span></p>
+    <p><strong>IPTV Expiration Date:</strong> <span id="infoIptvExpiration"></span></p>
+
+    <div class="modal-section-title">IMplayer</div>
+    <p><strong>IMplayer Code:</strong> <span id="infoImplayerCode"></span></p>
+    <p><strong>IMplayer Device Count:</strong> <span id="infoDeviceCount"></span></p>
+  </div>
+
+<script>
+const usersTable = document.querySelector("#usersTable tbody");
+
+async function loadUsers() {
+  try {
+    const res = await fetch('/users');
+    if (!res.ok) throw new Error('Failed to load users');
+
+    const users = await res.json();
+    renderTable(users);
+  } catch (error) {
+    console.error('Error loading users:', error);
+  }
+}
+
+function renderTable(users) {
+  usersTable.innerHTML = '';
+  users.forEach(user => {
+    const tagsArray = Array.isArray(user.tags) ? user.tags : user.tags.split(',').map(t => t.trim());
+
+    const tagIcons = tagsArray.map(tag => {
+      if (tag === 'Plex1') return `<img src="./images/plex1.png" alt="Plex 1" class="tag-icon">`;
+      if (tag === 'Plex2') return `<img src="./images/plex2.png" alt="Plex 2" class="tag-icon">`;
+      if (tag === 'IPTV') return `<img src="./images/iptv.png" alt="IPTV" class="tag-icon">`;
+      return '';
+    }).join(' ');
+
+    const plexExpiration = user.freeUser
+      ? `<span class="free-text">FREE</span>`
+      : (user.plexExpiration || '');
+
+    const row = `
+      <tr id="user-${user.id}">
+        <td>${user.name}</td>
+        <td>${user.email}</td>
+        <td>${user.owner || 'N/A'}</td>
+        <td class="tags">${tagIcons}</td>
+        <td>${plexExpiration}</td>
+        <td>${user.iptvExpiration || 'N/A'}</td>
+        <td>
+          <button onclick="showUserInfo(${user.id})">View</button>
+          <button onclick="sendEmail(${user.id}, '${user.email}')">Send Email</button>
+          <button onclick="editUser(${user.id})">Edit</button>
+          <button onclick="deleteUser(${user.id})">Delete</button>
+        </td>
+      </tr>
+    `;
+    usersTable.insertAdjacentHTML('beforeend', row);
+  });
+}
+
+function showUserInfo(id) {
+  const user = document.getElementById(`user-${id}`);
+  document.getElementById("infoName").textContent = user.cells[0].textContent;
+  document.getElementById("infoEmail").textContent = user.cells[1].textContent;
+  document.getElementById("infoOwner").textContent = user.cells[2].textContent;
+  document.getElementById("infoTagsText").innerHTML = user.cells[3].innerHTML;
+  document.getElementById("infoPlexExpiration").textContent = user.cells[4].textContent;
+  document.getElementById("infoIptvExpiration").textContent = user.cells[5].textContent;
+  document.getElementById("userInfoModal").style.display = "block";
+}
+
+function closeUserInfoModal() {
+  document.getElementById("userInfoModal").style.display = "none";
+}
+
+function sendEmail(userId, email) {
+  window.location.href = `email-manager.html?userId=${userId}&email=${encodeURIComponent(email)}`;
+}
+
+function editUser(userId) {
+  window.location.href = `create-user.html?id=${userId}`;
+}
+
+async function deleteUser(userId) {
+  if (confirm('Are you sure you want to delete this user?')) {
+    const res = await fetch(`/users/${userId}`, { method: 'DELETE' });
+    if (res.ok) document.getElementById(`user-${userId}`).remove();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadUsers);
+</script>
+</body>
+</html>

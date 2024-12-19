@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create or Edit User</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'Cyber';
+      src: url('https://assets.codepen.io/605876/Blender-Pro-Bold.otf');
+      font-display: swap;
+    }
+
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: 'Orbitron', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+      padding-top: 20px;
+    }
+
+    .name-logo {
+      width: 400px;
+      margin-bottom: 0;
+    }
+
+    .gradient-text {
+      font-size: 1.8rem;
+      background: linear-gradient(to top, #b833ff, #22bdee);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 15px 0 20px;
+    }
+
+    .button-container {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .cybr-btn {
+      padding: 8px 20px;
+      color: white;
+      font-size: 16px;
+      text-transform: uppercase;
+      font-family: 'Cyber', sans-serif;
+      background: #b833ff;
+      border: 2px solid #22bdee;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out;
+    }
+
+    .cybr-btn:hover {
+      background: #22bdee;
+      color: black;
+    }
+
+    form {
+      width: 60%;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      border: 1px solid #22bdee;
+      border-radius: 8px;
+      margin-top: 20px;
+      text-align: left;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      column-gap: 15px;
+      row-gap: 15px;
+    }
+
+    label, h3 {
+      font-size: 1rem;
+      color: white;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="text"], input[type="email"], 
+    input[type="date"], input[type="number"], select {
+      width: 100%;
+      padding: 8px;
+      background: #333;
+      color: white;
+      border: 1px solid #22bdee;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    h3 {
+      font-size: 1.2rem;
+      grid-column: 1 / span 2;
+      margin-bottom: 5px;
+    }
+
+    button[type="submit"] {
+      background: #b833ff;
+      color: white;
+      font-size: 1rem;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s ease-in-out;
+      grid-column: 1 / span 2;
+      justify-self: center;
+    }
+
+    button[type="submit"]:hover {
+      background: #22bdee;
+      color: black;
+    }
+
+    p#errorMessage {
+      color: red;
+      font-weight: bold;
+      grid-column: 1 / span 2;
+    }
+
+    #removePlexSection, #removeIPTVSection {
+      grid-column: 1 / span 2;
+    }
+
+    #tags-section {
+      display: flex;
+      flex-direction: column;
+      grid-column: 1 / span 2;
+      margin-bottom: 10px;
+    }
+
+    #tags-section label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <img src="./images/name_logo.png" alt="JohnsonFlix" class="name-logo">
+  <h2 class="gradient-text">Create or Edit User</h2>
+
+  <div class="button-container">
+    <a href="index.html" class="cybr-btn">Home</a>
+    <a href="users.html" class="cybr-btn">Manage Users</a>
+  </div>
+
+  <form id="createUserForm">
+    <input type="hidden" id="userId">
+
+    <label>Name:</label>
+    <input type="text" id="userName" required>
+
+    <label>Email:</label>
+    <input type="email" id="userEmail" required>
+
+    <label>Owner:</label>
+    <input type="text" id="owner">
+
+    <h3>Tags:</h3>
+    <div id="tags-section">
+      <label><input type="checkbox" id="tagPlex1" value="Plex1"> Plex 1</label>
+      <label><input type="checkbox" id="tagPlex2" value="Plex2"> Plex 2</label>
+      <label><input type="checkbox" id="tagIPTV" value="IPTV"> IPTV</label>
+    </div>
+
+    <h3>Subscriptions:</h3>
+    <div style="grid-column:1 / span 2;">
+      <label><input type="checkbox" id="freeUser"> Free User</label>
+    </div>
+
+    <label for="plexSelect">Select Plex Subscription:</label>
+    <select id="plexSelect">
+      <option value="">-- No Plex Selected --</option>
+    </select>
+
+    <label for="plexExpiration">Plex Expiration Date:</label>
+    <input type="date" id="plexExpiration">
+
+    <div id="removePlexSection" style="display:none;">
+      <label><input type="checkbox" id="removePlex"> Remove Plex Subscription</label>
+    </div>
+
+    <label for="iptvSelect">Select IPTV Subscription:</label>
+    <select id="iptvSelect">
+      <option value="">-- No IPTV Selected --</option>
+    </select>
+
+    <label for="iptvExpiration">IPTV Expiration Date:</label>
+    <input type="date" id="iptvExpiration">
+
+    <div id="removeIPTVSection" style="display:none;">
+      <label><input type="checkbox" id="removeIPTV"> Remove IPTV Subscription</label>
+    </div>
+
+    <h3>Optional Details:</h3>
+    <label>Username:</label>
+    <input type="text" id="username">
+
+    <label>Password:</label>
+    <input type="text" id="password">
+
+    <label>IMPlayer Code:</label>
+    <input type="text" id="implayerInfo">
+
+    <label>IMPlayer Device Count:</label>
+    <input type="number" id="deviceCount" min="0">
+
+    <button type="submit">Save User</button>
+    <p id="errorMessage"></p>
+  </form>
+  
+  <p id="errorMessage"></p>
+
+<script>
+async function loadSubscriptions() {
+  try {
+    const res = await fetch('/subscriptions');
+    if (!res.ok) throw new Error('Failed to load subscriptions');
+
+    const subscriptions = await res.json();
+    const plexSelect = document.getElementById('plexSelect');
+    const iptvSelect = document.getElementById('iptvSelect');
+
+    plexSelect.innerHTML = '<option value="">-- No Plex Selected --</option>';
+    iptvSelect.innerHTML = '<option value="">-- No IPTV Selected --</option>';
+
+    subscriptions.forEach((sub) => {
+      const option = document.createElement('option');
+      option.value = sub.id;
+      option.textContent = `${sub.name} (${sub.renewalPeriodMonths} Months)`;
+
+      if (sub.type === 'Plex') {
+        plexSelect.appendChild(option);
+      } else if (sub.type === 'IPTV') {
+        iptvSelect.appendChild(option);
+      }
+    });
+  } catch (error) {
+    console.error('Error loading subscriptions:', error);
+    document.getElementById('errorMessage').textContent = 'Failed to load subscriptions.';
+  }
+}
+
+async function fetchUserData() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const userId = urlParams.get('id');
+
+  if (!userId) return;
+
+  try {
+    const res = await fetch(`/users/${userId}`);
+    if (!res.ok) throw new Error('Failed to fetch user data');
+
+    const user = await res.json();
+
+    document.getElementById('userId').value = user.id || '';
+    document.getElementById('userName').value = user.name || '';
+    document.getElementById('userEmail').value = user.email || '';
+    document.getElementById('owner').value = user.owner || '';
+    document.getElementById('username').value = user.username || '';
+    document.getElementById('password').value = user.password || '';
+    document.getElementById('implayerInfo').value = user.implayerInfo || '';
+    document.getElementById('deviceCount').value = user.deviceCount || 0;
+    document.getElementById('freeUser').checked = user.freeUser || false;
+
+    document.getElementById('tagPlex1').checked = user.tags?.includes('Plex1') || false;
+    document.getElementById('tagPlex2').checked = user.tags?.includes('Plex2') || false;
+    document.getElementById('tagIPTV').checked = user.tags?.includes('IPTV') || false;
+
+    document.getElementById('removePlexSection').style.display = 'inline';
+    document.getElementById('removeIPTVSection').style.display = 'inline';
+  } catch (error) {
+    console.error('Error loading user:', error);
+    document.getElementById('errorMessage').textContent = 'Failed to load user data.';
+  }
+}
+
+document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const userId = document.getElementById('userId').value;
+  const endpoint = userId ? `/users/${userId}` : '/users';
+  const method = userId ? 'PUT' : 'POST';
+
+  const payload = {
+    id: userId || null,
+    name: document.getElementById('userName').value,
+    email: document.getElementById('userEmail').value,
+    owner: document.getElementById('owner').value || '',
+    username: document.getElementById('username').value || '',
+    password: document.getElementById('password').value || '',
+    implayerInfo: document.getElementById('implayerInfo').value || '',
+    deviceCount: parseInt(document.getElementById('deviceCount').value) || 0,
+    freeUser: document.getElementById('freeUser').checked || false,
+    tags: [
+      document.getElementById('tagPlex1').checked ? 'Plex1' : null,
+      document.getElementById('tagPlex2').checked ? 'Plex2' : null,
+      document.getElementById('tagIPTV').checked ? 'IPTV' : null,
+    ].filter(Boolean),
+    subscriptions: [
+      document.getElementById('plexSelect').value
+        ? { id: document.getElementById('plexSelect').value, nextRenewalDate: document.getElementById('plexExpiration').value || null }
+        : null,
+      document.getElementById('iptvSelect').value
+        ? { id: document.getElementById('iptvSelect').value, nextRenewalDate: document.getElementById('iptvExpiration').value || null }
+        : null,
+    ].filter(Boolean),
+    removals: [
+      document.getElementById('removePlex').checked ? 'Plex' : null,
+      document.getElementById('removeIPTV').checked ? 'IPTV' : null,
+    ].filter(Boolean),
+  };
+
+  try {
+    const res = await fetch(endpoint, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) throw new Error('Failed to save user');
+
+    window.location.href = 'users.html';
+  } catch (error) {
+    document.getElementById('errorMessage').textContent = 'Error saving user.';
+    console.error('Error saving user:', error);
+  }
+});
+
+// Initialize Form on Load
+window.addEventListener('load', () => {
+  loadSubscriptions();
+  fetchUserData();
+});
+
+</script>
+</body>
+</html>
