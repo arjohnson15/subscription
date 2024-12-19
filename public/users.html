@@ -82,6 +82,25 @@
       white-space: nowrap;
     }
 
+    select {
+      margin-left: 5px;
+      background: #22bdee;
+      color: black;
+      border: none;
+      font-size: 0.9rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .sort-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
     .tag-icon {
       width: 20px;
       height: 20px;
@@ -91,6 +110,41 @@
     .free-text {
       color: #E5A00D;
       font-weight: bold;
+    }
+
+    /* Action Button Styles */
+    .action-btn {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      margin: 2px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .action-view {
+      background: #22bdee;
+      color: black;
+    }
+
+    .action-edit {
+      background: #b833ff;
+      color: white;
+    }
+
+    .action-email {
+      background: #ffb833;
+      color: black;
+    }
+
+    .action-delete {
+      background: #ff3333;
+      color: white;
+    }
+
+    .action-btn:hover {
+      opacity: 0.8;
     }
 
     #userInfoModal {
@@ -154,12 +208,20 @@
   <table id="usersTable">
     <thead>
       <tr>
-        <th>Name</th>
-        <th>Email</th>
+        <th>Name <button onclick="sortTableByText('name')" class="sort-btn">⬇</button></th>
+        <th>Email <button onclick="sortTableByText('email')" class="sort-btn">⬇</button></th>
         <th>Owner</th>
-        <th>Tags</th>
-        <th>Plex Expiration</th>
-        <th>IPTV Expiration</th>
+        <th>
+          Tags 
+          <select id="tagFilter" onchange="filterByTag()">
+            <option value="">All</option>
+            <option value="Plex1">Plex1</option>
+            <option value="Plex2">Plex2</option>
+            <option value="IPTV">IPTV</option>
+          </select>
+        </th>
+        <th>Plex Expiration <button onclick="sortTableByDate('plexExpiration')" class="sort-btn">⬇</button></th>
+        <th>IPTV Expiration <button onclick="sortTableByDate('iptvExpiration')" class="sort-btn">⬇</button></th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -182,10 +244,6 @@
     <p><strong>Plex Expiration Date:</strong> <span id="infoPlexExpiration"></span></p>
     <p><strong>IPTV Subscription:</strong> <span id="infoIptvName"></span></p>
     <p><strong>IPTV Expiration Date:</strong> <span id="infoIptvExpiration"></span></p>
-
-    <div class="modal-section-title">IMplayer</div>
-    <p><strong>IMplayer Code:</strong> <span id="infoImplayerCode"></span></p>
-    <p><strong>IMplayer Device Count:</strong> <span id="infoDeviceCount"></span></p>
   </div>
 
 <script>
@@ -209,9 +267,9 @@ function renderTable(users) {
     const tagsArray = Array.isArray(user.tags) ? user.tags : user.tags.split(',').map(t => t.trim());
 
     const tagIcons = tagsArray.map(tag => {
-      if (tag === 'Plex1') return `<img src="./images/plex1.png" alt="Plex 1" class="tag-icon">`;
-      if (tag === 'Plex2') return `<img src="./images/plex2.png" alt="Plex 2" class="tag-icon">`;
-      if (tag === 'IPTV') return `<img src="./images/iptv.png" alt="IPTV" class="tag-icon">`;
+      if (tag === 'Plex1') return `<img src="./images/plex1.png" alt="plex1" class="tag-icon">`;
+      if (tag === 'Plex2') return `<img src="./images/plex2.png" alt="plex2" class="tag-icon">`;
+      if (tag === 'IPTV') return `<img src="./images/iptv.png" alt="iptv" class="tag-icon">`;
       return '';
     }).join(' ');
 
@@ -219,19 +277,21 @@ function renderTable(users) {
       ? `<span class="free-text">FREE</span>`
       : (user.plexExpiration || '');
 
+    const iptvExpiration = user.iptvExpiration || 'N/A';
+
     const row = `
       <tr id="user-${user.id}">
-        <td>${user.name}</td>
-        <td>${user.email}</td>
+        <td data-column="name">${user.name}</td>
+        <td data-column="email">${user.email}</td>
         <td>${user.owner || 'N/A'}</td>
         <td class="tags">${tagIcons}</td>
-        <td>${plexExpiration}</td>
-        <td>${user.iptvExpiration || 'N/A'}</td>
+        <td data-column="plexExpiration">${plexExpiration}</td>
+        <td data-column="iptvExpiration">${iptvExpiration}</td>
         <td>
-          <button onclick="showUserInfo(${user.id})">View</button>
-          <button onclick="sendEmail(${user.id}, '${user.email}')">Send Email</button>
-          <button onclick="editUser(${user.id})">Edit</button>
-          <button onclick="deleteUser(${user.id})">Delete</button>
+          <button class="action-btn action-view" onclick="showUserInfo(${user.id})">View</button>
+          <button class="action-btn action-edit" onclick="editUser(${user.id})">Edit</button>
+          <button class="action-btn action-email" onclick="sendEmail(${user.id}, '${user.email}')">Send Email</button>
+          <button class="action-btn action-delete" onclick="deleteUser(${user.id})">Delete</button>
         </td>
       </tr>
     `;
@@ -239,6 +299,81 @@ function renderTable(users) {
   });
 }
 
+let sortDirections = {
+  plexExpiration: "asc",
+  iptvExpiration: "asc",
+  name: "asc",
+  email: "asc"
+};
+
+// Sort by Text Function (Name & Email)
+function sortTableByText(column) {
+  const rows = Array.from(usersTable.querySelectorAll("tr"));
+  const currentDirection = sortDirections[column];
+
+  const sortedRows = rows.sort((a, b) => {
+    const cellA = a.querySelector(`td[data-column="${column}"]`).textContent.trim().toLowerCase();
+    const cellB = b.querySelector(`td[data-column="${column}"]`).textContent.trim().toLowerCase();
+
+    return currentDirection === "asc"
+      ? cellA.localeCompare(cellB)
+      : cellB.localeCompare(cellA);
+  });
+
+  // Update sort direction
+  sortDirections[column] = currentDirection === "asc" ? "desc" : "asc";
+
+  // Clear and rebuild the table
+  usersTable.innerHTML = '';
+  sortedRows.forEach(row => usersTable.appendChild(row));
+}
+
+function sortTableByDate(column) {
+  const rows = Array.from(usersTable.querySelectorAll("tr"));
+  const currentDirection = sortDirections[column];
+
+  const sortedRows = rows.sort((a, b) => {
+    const cellA = a.querySelector(`td[data-column="${column}"]`).textContent.trim();
+    const cellB = b.querySelector(`td[data-column="${column}"]`).textContent.trim();
+
+    // Handle "FREE" and missing dates
+    if (cellA === "FREE") return currentDirection === "asc" ? -1 : 1;
+    if (cellB === "FREE") return currentDirection === "asc" ? 1 : -1;
+    if (!cellA) return currentDirection === "asc" ? 1 : -1;
+    if (!cellB) return currentDirection === "asc" ? -1 : 1;
+
+    const dateA = Date.parse(cellA) || 0;
+    const dateB = Date.parse(cellB) || 0;
+
+    return currentDirection === "asc" ? dateA - dateB : dateB - dateA;
+  });
+
+  // Update sort direction
+  sortDirections[column] = currentDirection === "asc" ? "desc" : "asc";
+
+  // Clear and rebuild the table
+  usersTable.innerHTML = '';
+  sortedRows.forEach(row => usersTable.appendChild(row));
+}
+
+
+function filterByTag() {
+  const filterValue = document.getElementById("tagFilter").value.toLowerCase();
+  const tableRows = document.querySelectorAll("#usersTable tbody tr");
+
+  tableRows.forEach(row => {
+    const tagIcons = row.querySelectorAll(".tags img");
+    const tags = Array.from(tagIcons).map(img => img.alt.toLowerCase());
+
+    if (!filterValue || tags.includes(filterValue)) {
+      row.style.display = "";  // Show matching rows
+    } else {
+      row.style.display = "none";  // Hide non-matching rows
+    }
+  });
+}
+
+// Existing Functions
 function showUserInfo(id) {
   const user = document.getElementById(`user-${id}`);
   document.getElementById("infoName").textContent = user.cells[0].textContent;
@@ -270,6 +405,7 @@ async function deleteUser(userId) {
 }
 
 document.addEventListener("DOMContentLoaded", loadUsers);
+
 </script>
 </body>
 </html>

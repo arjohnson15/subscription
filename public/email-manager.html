@@ -209,7 +209,7 @@
 
 <script>
 // Initialize and Load Data
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   loadTemplates();
   populateEmailForm();
   setupTagSelection();
@@ -217,97 +217,196 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function populateEmailForm() {
   const urlParams = new URLSearchParams(window.location.search);
-  const recipient = urlParams.get('email');
-  const userId = urlParams.get('userId');
+  const recipient = urlParams.get("email");
+  const userId = urlParams.get("userId");
 
   if (recipient && userId) {
-    document.getElementById('emailRecipient').value = recipient;
-    document.getElementById('emailForm').dataset.userId = userId;
+    document.getElementById("emailRecipient").value = recipient;
+    document.getElementById("emailForm").dataset.userId = userId;
   }
 }
 
 async function loadTemplates() {
   try {
-    const res = await fetch('/emails/templates');
-    if (!res.ok) throw new Error('Failed to fetch templates');
+    const res = await fetch("/emails/templates");
+    if (!res.ok) throw new Error("Failed to fetch templates");
 
     const templates = await res.json();
-    const templateSelect = document.getElementById('templateSelect');
+    const templateSelect = document.getElementById("templateSelect");
     templateSelect.innerHTML = `<option value="">-- Select a Template --</option>`;
 
-    templates.forEach(template => {
-      const option = document.createElement('option');
+    templates.forEach((template) => {
+      const option = document.createElement("option");
       option.value = template.id;
       option.textContent = template.name;
       templateSelect.appendChild(option);
     });
   } catch (error) {
-    console.error('Error loading templates:', error);
+    console.error("Error loading templates:", error);
   }
 }
 
 function setupTagSelection() {
-  const tagCheckboxes = ['bccPlex1', 'bccPlex2', 'bccIPTV'];
+  const tagCheckboxes = ["bccPlex1", "bccPlex2", "bccIPTV"];
 
-  tagCheckboxes.forEach(id => {
-    document.getElementById(id).addEventListener('change', () => {
-      const hasCheckedTag = tagCheckboxes.some(tagId => document.getElementById(tagId).checked);
+  tagCheckboxes.forEach((id) => {
+    document.getElementById(id).addEventListener("change", () => {
+      const hasCheckedTag = tagCheckboxes.some(
+        (tagId) => document.getElementById(tagId).checked
+      );
       if (hasCheckedTag) {
-        document.getElementById('emailRecipient').value = 'johnsonflixemail@gmail.com';
+        document.getElementById("emailRecipient").value =
+          "johnsonflixemail@gmail.com";
       }
     });
   });
 }
 
-document.getElementById('loadTemplate').addEventListener('click', async () => {
-  const selectedTemplateId = document.getElementById('templateSelect').value;
-  if (!selectedTemplateId) return alert('Please select a template.');
+// Load Template Button Click
+document
+  .getElementById("loadTemplate")
+  .addEventListener("click", async () => {
+    const selectedTemplateId = document.getElementById("templateSelect").value;
+    if (!selectedTemplateId) return alert("Please select a template.");
 
-  try {
-    const res = await fetch(`/emails/templates/${selectedTemplateId}`);
-    if (!res.ok) throw new Error('Failed to load template');
+    try {
+      const res = await fetch(`/emails/templates/${selectedTemplateId}`);
+      if (!res.ok) throw new Error("Failed to load template");
 
-    const template = await res.json();
-    document.getElementById('emailSubject').value = template.subject;
-    document.getElementById('emailBody').value = template.body;
+      const template = await res.json();
+      document.getElementById("emailSubject").value = template.subject;
+      document.getElementById("emailBody").value = template.body;
 
-    document.getElementById('saveTemplate').style.display = 'none';
-    document.getElementById('saveChanges').style.display = 'inline-block';
-    document.getElementById('statusMessage').textContent = 'Template loaded successfully!';
-  } catch (error) {
-    console.error('Error loading template:', error);
-    document.getElementById('statusMessage').textContent = 'Error loading template.';
-  }
-});
+      document.getElementById("saveTemplate").style.display = "none";
+      document.getElementById("saveChanges").style.display = "inline-block";
+      document.getElementById("statusMessage").textContent =
+        "Template loaded successfully!";
+    } catch (error) {
+      console.error("Error loading template:", error);
+      document.getElementById("statusMessage").textContent =
+        "Error loading template.";
+    }
+  });
+  
+// Save as Template Button Click
+document
+  .getElementById("saveTemplate")
+  .addEventListener("click", async () => {
+    const templateName = prompt("Enter a template name:");
+    if (!templateName) {
+      alert("Template name is required.");
+      return;
+    }
 
-document.getElementById('emailForm').addEventListener('submit', async (event) => {
-  event.preventDefault();
+    const subject = document.getElementById("emailSubject").value.trim();
+    const body = document.getElementById("emailBody").value.trim();
 
-  const bccTags = ['bccPlex1', 'bccPlex2', 'bccIPTV']
-    .filter(id => document.getElementById(id).checked)
-    .map(id => document.getElementById(id).value);
+    if (!subject || !body) {
+      alert("Please fill out the email subject and body.");
+      return;
+    }
 
-  const payload = {
-    recipient: document.getElementById('emailRecipient').value,
-    subject: document.getElementById('emailSubject').value,
-    body: document.getElementById('emailBody').value,
-    bccTags
-  };
+    const payload = {
+      name: templateName,
+      subject: subject,
+      body: body,
+    };
 
-  try {
-    const res = await fetch('/emails/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await fetch("/emails/templates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-    if (!res.ok) throw new Error('Failed to send email');
-    document.getElementById('statusMessage').textContent = 'Email sent successfully!';
-  } catch (error) {
-    console.error('Error sending email:', error);
-    document.getElementById('statusMessage').textContent = 'Error sending email.';
-  }
-});
+      if (!res.ok) throw new Error("Failed to save template");
+
+      alert("Template saved successfully!");
+      loadTemplates(); // Refresh the template list
+      document.getElementById("statusMessage").textContent =
+        "Template saved successfully!";
+    } catch (error) {
+      console.error("Error saving template:", error);
+      document.getElementById("statusMessage").textContent =
+        "Error saving template.";
+    }
+  });
+
+
+// Save Changes Button Click
+document
+  .getElementById("saveChanges")
+  .addEventListener("click", async () => {
+    const selectedTemplateId = document.getElementById("templateSelect").value;
+    const updatedSubject = document.getElementById("emailSubject").value.trim();
+    const updatedBody = document.getElementById("emailBody").value.trim();
+
+    if (!selectedTemplateId || !updatedSubject || !updatedBody) {
+      alert("Please fill out all fields and select a template.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/emails/templates/${selectedTemplateId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          subject: updatedSubject,
+          body: updatedBody,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save changes");
+
+      document.getElementById("statusMessage").textContent =
+        "Template updated successfully!";
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      document.getElementById("statusMessage").textContent =
+        "Error saving changes.";
+    }
+  });
+
+// Submit Email Form
+document
+  .getElementById("emailForm")
+  .addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const payload = {
+      recipient: document.getElementById("emailRecipient").value,
+      subject: document.getElementById("emailSubject").value,
+      body: document.getElementById("emailBody").value,
+      userId: document.getElementById("emailForm").dataset.userId || null,
+      bccTags: ["Plex1", "Plex2", "IPTV"].filter(
+        (tag) => document.getElementById(`bcc${tag}`).checked
+      ),
+    };
+
+    console.log("Frontend Email Payload Sent:", payload); // Debug Log
+
+    try {
+      const res = await fetch("/emails/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to send email");
+      document.getElementById("statusMessage").textContent =
+        "Email sent successfully!";
+    } catch (error) {
+      console.error("Error sending email:", error);
+      document.getElementById("statusMessage").textContent =
+        "Error sending email.";
+    }
+  });
+
+
 
 </script>
 </body>

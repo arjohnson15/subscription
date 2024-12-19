@@ -9,11 +9,9 @@ async function getUsersByTags(tags) {
   try {
     const users = await User.findAll({
       where: {
-        tags: {
-          [Op.or]: tags.map(tag => ({
-            [Op.like]: `%${tag}%`,
-          })),
-        },
+        [Op.or]: tags.map(tag => ({
+          tags: { [Op.like]: `%${tag}%` }
+        }))
       },
       attributes: ['email'],
     });
@@ -116,56 +114,80 @@ router.post('/send', async (req, res) => {
 
     let replacements = {};
 
-    // Load User Data if userId is provided
-    if (userId) {
-      const user = await User.findByPk(userId, {
-        include: {
-          model: UserSubscription,
-          include: Subscription,
-        },
-      });
+ // Load User Data if userId is provided
+if (userId) {
+  console.log("User ID Provided:", userId);  // Debug Log
 
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
+  const user = await User.findByPk(userId, {
+    include: {
+      model: UserSubscription,
+      include: Subscription,
+    },
+  });
 
-      // Build replacement object
-      replacements = {
-        name: user.name || '',
-        email: user.email || '',
-        username: user.username || '',
-        password: user.password || '',
-        implayerInfo: user.implayerInfo || '',
-        deviceCount: user.deviceCount || '',
-        plexExpiration: user.UserSubscriptions.find(sub => sub.Subscription.type === 'Plex')?.nextRenewalDate || '',
-        iptvExpiration: user.UserSubscriptions.find(sub => sub.Subscription.type === 'IPTV')?.nextRenewalDate || '',
-      };
-    }
+  if (!user) {
+    console.error("User Not Found for ID:", userId);
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  // Correctly Populate the Replacements Object
+  replacements = {
+    name: user.name || 'N/A',
+    email: user.email || 'N/A',
+    username: user.username || 'N/A',
+    password: user.password || 'N/A',
+    implayerInfo: user.implayerInfo || 'N/A',
+    deviceCount: user.deviceCount || 'N/A',
+    plexExpiration: user.UserSubscriptions.find(sub => sub.Subscription.type === 'Plex')?.nextRenewalDate || 'N/A',
+    iptvExpiration: user.UserSubscriptions.find(sub => sub.Subscription.type === 'IPTV')?.nextRenewalDate || 'N/A',
+  };
+
+  console.log("Populated Replacements:", replacements);  // Log the replacements object
+} else {
+  console.error("No User ID Provided in Request");
+}
+
 
     // Replace placeholders in the email body
     const filledBody = body.replace(/\{\{(.*?)\}\}/g, (_, key) => {
-		const trimmedKey = key.trim();
-		return replacements[trimmedKey] !== undefined ? replacements[trimmedKey] : `{{${trimmedKey}}}`;
-	});
+      const trimmedKey = key.trim();
+      const replacementValue = replacements[trimmedKey];
+      console.log(`Replacing {{${trimmedKey}}} with:`, replacementValue || `{{${trimmedKey}}}`); 
+      return replacementValue !== undefined && replacementValue !== ''
+        ? replacementValue
+        : `{{${trimmedKey}}}`; // Leave the placeholder if not found
+    });
+
+    console.log("Final Filled Email Body:", filledBody);  // Log final email content
 
     // Handle BCC Recipients
     let bccRecipients = [];
     if (bccTags && bccTags.length > 0) {
       const users = await User.findAll({
         where: {
-          tags: { [Op.overlap]: bccTags }, // Ensure correct Sequelize operator
+          [Op.or]: bccTags.map(tag => ({
+            tags: { [Op.like]: `%${tag}%` }
+          })),
         },
       });
       bccRecipients = users.map(user => user.email);
     }
 
-    await sendEmail(recipient, subject, filledBody, bccRecipients);
+    // Send the email and log success
+    try {
+      await sendEmail(recipient, subject, filledBody, bccRecipients);
+      console.log("Email Sent with Body:", filledBody);  // Confirm email sent
+      res.json({ message: 'Email sent successfully' });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      res.status(500).json({ error: 'Failed to send email' });
+    }
 
-    res.json({ message: 'Email sent successfully' });
   } catch (error) {
-    console.error('Error sending email:', error);
-    res.status(500).json({ error: 'Failed to send email' });
+    console.error('Unexpected Error:', error);
+    res.status(500).json({ error: 'An unexpected error occurred' });
   }
 });
+
 
 module.exports = router;
