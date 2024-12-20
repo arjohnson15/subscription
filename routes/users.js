@@ -17,7 +17,6 @@ router.post('/', async (req, res) => {
     let user;
 
     if (id) {
-      // Update Existing User
       user = await User.findByPk(id);
       if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -33,7 +32,6 @@ router.post('/', async (req, res) => {
         owner: owner || ''
       });
     } else {
-      // Create New User
       user = await User.create({
         name,
         email,
@@ -47,54 +45,51 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Handle Subscriptions
     if (subscriptions && subscriptions.length > 0) {
       for (const sub of subscriptions) {
         const subscription = await Subscription.findByPk(sub.id);
         if (subscription) {
+          await UserSubscription.destroy({
+            where: {
+              userId: user.id,
+              type: subscription.type,
+            },
+          });
+
           const startDate = new Date();
           const nextRenewalDate = sub.nextRenewalDate
             ? new Date(sub.nextRenewalDate)
             : new Date(startDate.setMonth(startDate.getMonth() + subscription.renewalPeriodMonths));
 
-          await UserSubscription.upsert({
+          await UserSubscription.create({
             userId: user.id,
             subscriptionId: subscription.id,
             startDate,
             nextRenewalDate,
+            type: subscription.type,
           });
         }
       }
     }
 
-    // Handle Subscription Removals
     if (removals && removals.length > 0) {
-      for (const type of removals) {
-        const subToRemove = await UserSubscription.findOne({
-          where: { userId: user.id },
-          include: {
-            model: Subscription,
-            where: { type },
+      await UserSubscription.destroy({
+        where: {
+          userId: user.id,
+          type: {
+            [Sequelize.Op.in]: removals,
           },
-        });
-        if (subToRemove) {
-          await subToRemove.destroy();
-        }
-      }
-    }
-
-    // If freeUser is true, remove any Plex subscription
-    if (freeUser) {
-      const plexToRemove = await UserSubscription.findOne({
-        where: { userId: user.id },
-        include: {
-          model: Subscription,
-          where: { type: 'Plex' },
         },
       });
-      if (plexToRemove) {
-        await plexToRemove.destroy();
-      }
+    }
+
+    if (freeUser) {
+      await UserSubscription.destroy({
+        where: {
+          userId: user.id,
+          type: 'Plex',
+        },
+      });
     }
 
     res.status(201).json({ message: 'User saved successfully' });
@@ -130,54 +125,51 @@ router.put('/:id', async (req, res) => {
       owner: owner || ''
     });
 
-    // Update Subscriptions
     if (subscriptions && subscriptions.length > 0) {
       for (const sub of subscriptions) {
         const subscription = await Subscription.findByPk(sub.id);
         if (subscription) {
+          await UserSubscription.destroy({
+            where: {
+              userId: user.id,
+              type: subscription.type,
+            },
+          });
+
           const startDate = new Date();
           const nextRenewalDate = sub.nextRenewalDate
             ? new Date(sub.nextRenewalDate)
             : new Date(startDate.setMonth(startDate.getMonth() + subscription.renewalPeriodMonths));
 
-          await UserSubscription.upsert({
+          await UserSubscription.create({
             userId: user.id,
             subscriptionId: subscription.id,
             startDate,
             nextRenewalDate,
+            type: subscription.type,
           });
         }
       }
     }
 
-    // Handle Subscription Removals
     if (removals && removals.length > 0) {
-      for (const type of removals) {
-        const subToRemove = await UserSubscription.findOne({
-          where: { userId: user.id },
-          include: {
-            model: Subscription,
-            where: { type },
+      await UserSubscription.destroy({
+        where: {
+          userId: user.id,
+          type: {
+            [Sequelize.Op.in]: removals,
           },
-        });
-        if (subToRemove) {
-          await subToRemove.destroy();
-        }
-      }
-    }
-
-    // If freeUser is true, remove any Plex subscription
-    if (freeUser) {
-      const plexToRemove = await UserSubscription.findOne({
-        where: { userId: user.id },
-        include: {
-          model: Subscription,
-          where: { type: 'Plex' },
         },
       });
-      if (plexToRemove) {
-        await plexToRemove.destroy();
-      }
+    }
+
+    if (freeUser) {
+      await UserSubscription.destroy({
+        where: {
+          userId: user.id,
+          type: 'Plex',
+        },
+      });
     }
 
     res.status(200).json({ message: 'User updated successfully' });
@@ -200,19 +192,14 @@ router.get('/', async (req, res) => {
     const formattedUsers = users.map((user) => {
       const userData = user.get({ plain: true });
 
-      // Find Plex and IPTV subscriptions
       const plexSub = user.UserSubscriptions.find(sub => sub.Subscription.type === 'Plex');
       const iptvSub = user.UserSubscriptions.find(sub => sub.Subscription.type === 'IPTV');
 
-      // If freeUser, plexExpiration is 'FREE'; otherwise use date or ''
-      let plexExpiration = '';
-      if (userData.freeUser) {
-        plexExpiration = 'FREE';
-      } else {
-        plexExpiration = plexSub && plexSub.nextRenewalDate
+      const plexExpiration = userData.freeUser
+        ? 'FREE'
+        : plexSub && plexSub.nextRenewalDate
           ? plexSub.nextRenewalDate.toISOString().split('T')[0]
           : '';
-      }
 
       const iptvExpiration = iptvSub && iptvSub.nextRenewalDate
         ? iptvSub.nextRenewalDate.toISOString().split('T')[0]

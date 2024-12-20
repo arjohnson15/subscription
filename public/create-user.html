@@ -293,34 +293,46 @@ document.getElementById('createUserForm').addEventListener('submit', async (e) =
   const endpoint = userId ? `/users/${userId}` : '/users';
   const method = userId ? 'PUT' : 'POST';
 
-  const payload = {
-    id: userId || null,
-    name: document.getElementById('userName').value,
-    email: document.getElementById('userEmail').value,
-    owner: document.getElementById('owner').value || '',
-    username: document.getElementById('username').value || '',
-    password: document.getElementById('password').value || '',
-    implayerInfo: document.getElementById('implayerInfo').value || '',
-    deviceCount: parseInt(document.getElementById('deviceCount').value) || 0,
-    freeUser: document.getElementById('freeUser').checked || false,
-    tags: [
-      document.getElementById('tagPlex1').checked ? 'Plex1' : null,
-      document.getElementById('tagPlex2').checked ? 'Plex2' : null,
-      document.getElementById('tagIPTV').checked ? 'IPTV' : null,
-    ].filter(Boolean),
-    subscriptions: [
-      document.getElementById('plexSelect').value
-        ? { id: document.getElementById('plexSelect').value, nextRenewalDate: document.getElementById('plexExpiration').value || null }
-        : null,
-      document.getElementById('iptvSelect').value
-        ? { id: document.getElementById('iptvSelect').value, nextRenewalDate: document.getElementById('iptvExpiration').value || null }
-        : null,
-    ].filter(Boolean),
-    removals: [
-      document.getElementById('removePlex').checked ? 'Plex' : null,
-      document.getElementById('removeIPTV').checked ? 'IPTV' : null,
-    ].filter(Boolean),
-  };
+const payload = {
+  id: userId || null,
+  name: document.getElementById('userName').value,
+  email: document.getElementById('userEmail').value,
+  owner: document.getElementById('owner').value || '',
+  username: document.getElementById('username').value || '',
+  password: document.getElementById('password').value || '',
+  implayerInfo: document.getElementById('implayerInfo').value || '',
+  deviceCount: parseInt(document.getElementById('deviceCount').value) || 0,
+  freeUser: document.getElementById('freeUser').checked || false,
+  tags: [
+    document.getElementById('tagPlex1').checked ? 'Plex1' : null,
+    document.getElementById('tagPlex2').checked ? 'Plex2' : null,
+    document.getElementById('tagIPTV').checked ? 'IPTV' : null,
+  ].filter(Boolean),
+
+subscriptions: [
+  document.getElementById('plexSelect').value
+    ? {
+        id: document.getElementById('plexSelect').value,
+        type: 'Plex',
+        nextRenewalDate: document.getElementById('plexExpiration').value || null,
+      }
+    : null,
+  document.getElementById('iptvSelect').value
+    ? {
+        id: document.getElementById('iptvSelect').value,
+        type: 'IPTV',
+        nextRenewalDate: document.getElementById('iptvExpiration').value || null,
+      }
+    : null,
+].filter(Boolean),
+
+
+  removals: [
+    document.getElementById('removePlex').checked ? 'Plex' : null,
+    document.getElementById('removeIPTV').checked ? 'IPTV' : null,
+  ].filter(Boolean),
+};
+
 
   try {
     const res = await fetch(endpoint, {

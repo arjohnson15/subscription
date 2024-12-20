@@ -74,10 +74,29 @@ async function sendRenewalReminders() {
                 const emailKey = `${user.email}-${sub.name}-${checkDate}`;
                 console.log(`🔎 Checking email key: ${emailKey}`);
 
-                const emailBody = template.body
-                    .replace('{{name}}', user.name)
-                    .replace('{{subscriptionName}}', sub.name)
-                    .replace('{{nextRenewalDate}}', DateTime.fromISO(subscription.nextRenewalDate).toLocaleString(DateTime.DATE_FULL));
+// Extract the exact date from the database field
+const nextRenewalDate = subscription.nextRenewalDate
+  ? new Date(subscription.nextRenewalDate).toISOString().split('T')[0]
+  : 'N/A';
+
+// Format the date to a readable format (optional)
+const formattedNextRenewalDate = nextRenewalDate !== 'N/A'
+  ? DateTime.fromISO(nextRenewalDate).toFormat('MMMM dd, yyyy')
+  : 'N/A';
+
+// Generate the email body with the extracted date
+const emailBody = template.body
+  .replace('{{name}}', user.name || '')
+  .replace('{{subscriptionName}}', sub.name || '')
+  .replace('{{nextRenewalDate}}', formattedNextRenewalDate)
+  .replace('{{iptvExpiration}}', 
+    sub.type === 'IPTV' ? formattedNextRenewalDate : 'N/A'
+  )
+  .replace('{{plexExpiration}}', 
+    sub.type === 'Plex' ? formattedNextRenewalDate : 'N/A'
+  );
+
+
 
                 try {
                     await sendEmail(

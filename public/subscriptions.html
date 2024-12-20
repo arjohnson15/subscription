@@ -131,6 +131,42 @@
       font-family: 'Cyber', sans-serif;
       text-transform: uppercase;
     }
+
+    #editSubscriptionModal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: #333;
+      padding: 20px;
+      border-radius: 8px;
+      width: 50%;
+      color: white;
+      border: 2px solid #22bdee;
+    }
+
+    .modal-content label {
+      margin-top: 10px;
+    }
+
+    .modal-content button {
+      margin-top: 15px;
+    }
+
+    .close-modal {
+      float: right;
+      cursor: pointer;
+      color: red;
+      font-size: 1.5rem;
+    }
   </style>
 </head>
 <body>
@@ -187,6 +223,46 @@
     <tbody></tbody>
   </table>
 
+  <!-- Edit Subscription Modal -->
+  <div id="editSubscriptionModal">
+    <div class="modal-content">
+      <span id="closeModalBtn" class="close-modal">&times;</span>
+      <h2>Edit Subscription</h2>
+      <form id="editSubscriptionForm">
+        <label>Name:</label>
+        <input type="text" id="editSubscriptionName" required>
+
+        <label>Subscription Type:</label>
+        <select id="editSubscriptionType" required>
+          <option value="Plex">Plex</option>
+          <option value="IPTV">IPTV</option>
+        </select>
+
+        <label>Duration (Months):</label>
+        <select id="editRenewalPeriodMonths" required>
+          <option value="1">1</option>
+          <option value="3">3</option>
+          <option value="6">6</option>
+          <option value="12">12</option>
+        </select>
+
+        <div id="editStreamsField" style="display: none;">
+          <label>Number of Streams:</label>
+          <select id="editNumberOfStreams">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+
+        <button type="submit">Update Subscription</button>
+      </form>
+    </div>
+  </div>
+
+  
 <script>
 const subscriptionsTable = document.getElementById('subscriptionsTable').querySelector('tbody');
 const subscriptionType = document.getElementById('subscriptionType');
@@ -217,6 +293,7 @@ async function loadSubscriptions() {
         <td>${sub.renewalPeriodMonths}</td>
         <td>${numberOfStreams}</td>
         <td>
+          <button onclick="openEditModal(${sub.id})">Edit</button>
           <button onclick="deleteSubscription(${sub.id})">Delete</button>
         </td>
       `;
@@ -267,7 +344,78 @@ async function deleteSubscription(subscriptionId) {
   }
 }
 
+// Edit Subscription Functions
+const editModal = document.getElementById('editSubscriptionModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+
+// Open Edit Modal
+async function openEditModal(subscriptionId) {
+  try {
+    const res = await fetch(`/subscriptions/${subscriptionId}`);
+    if (!res.ok) throw new Error('Failed to fetch subscription');
+
+    const sub = await res.json();
+
+    // Populate Edit Form
+    document.getElementById('editSubscriptionName').value = sub.name;
+    document.getElementById('editSubscriptionType').value = sub.type;
+    document.getElementById('editRenewalPeriodMonths').value = sub.renewalPeriodMonths;
+
+    if (sub.type === 'IPTV') {
+      document.getElementById('editStreamsField').style.display = 'block';
+      document.getElementById('editNumberOfStreams').value = sub.streams || 1;
+    } else {
+      document.getElementById('editStreamsField').style.display = 'none';
+    }
+
+    // Open Modal
+    editModal.style.display = 'flex';
+
+    // Handle Update Submission
+    document.getElementById('editSubscriptionForm').onsubmit = async (e) => {
+      e.preventDefault();
+      await updateSubscription(subscriptionId);
+    };
+  } catch (error) {
+    console.error('Error opening edit modal:', error);
+  }
+}
+
+// Close Edit Modal
+closeModalBtn.addEventListener('click', () => {
+  editModal.style.display = 'none';
+});
+
+// Update Subscription
+async function updateSubscription(subscriptionId) {
+  const payload = {
+    name: document.getElementById('editSubscriptionName').value,
+    type: document.getElementById('editSubscriptionType').value,
+    renewalPeriodMonths: parseInt(document.getElementById('editRenewalPeriodMonths').value),
+    streams: document.getElementById('editSubscriptionType').value === 'IPTV' 
+      ? parseInt(document.getElementById('editNumberOfStreams').value) 
+      : null
+  };
+
+  try {
+    const res = await fetch(`/subscriptions/${subscriptionId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Failed to update subscription');
+
+    editModal.style.display = 'none';
+    loadSubscriptions();
+  } catch (error) {
+    console.error('Error updating subscription:', error);
+  }
+}
+
+// Initialize Page
 loadSubscriptions();
 </script>
 </body>
 </html>
+
