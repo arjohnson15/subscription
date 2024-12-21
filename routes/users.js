@@ -219,6 +219,30 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get user by email
+router.get("/email/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    const user = await User.findOne({
+      where: { email },
+      include: {
+        model: UserSubscription,
+        include: Subscription,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error("Error fetching user by email:", error);
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+
 // Fetch User by ID
 router.get('/:id', async (req, res) => {
   try {

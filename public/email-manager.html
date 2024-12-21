@@ -180,7 +180,7 @@
     </div>
 
     <label for="emailRecipient">Recipient:</label>
-    <input type="email" id="emailRecipient" name="recipient" required>
+    <input type="email" id="emailRecipient" name="recipient" multiple placeholder="email1@example.com, email2@example.com" required>
 
     <label for="bccTags">BCC Users with Tags:</label>
     <div class="bcc-tags">
@@ -370,42 +370,58 @@ document
         "Error saving changes.";
     }
   });
+  
+// Correct Date Extraction Without Timezone Conversion
+function extractDateOnly(dateString) {
+  if (!dateString) return "N/A";
+
+  // Extract YYYY-MM-DD directly from the database format
+  const [year, month, day] = dateString.split("T")[0].split("-");
+
+  // Manually format to "Month DD, YYYY"
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June", 
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  return `${monthNames[parseInt(month, 10) - 1]} ${day}, ${year}`;
+}
 
 // Submit Email Form
-document
-  .getElementById("emailForm")
-  .addEventListener("submit", async (event) => {
-    event.preventDefault();
+document.getElementById("emailForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-    const payload = {
-      recipient: document.getElementById("emailRecipient").value,
-      subject: document.getElementById("emailSubject").value,
-      body: document.getElementById("emailBody").value,
-      userId: document.getElementById("emailForm").dataset.userId || null,
-      bccTags: ["Plex1", "Plex2", "IPTV"].filter(
-        (tag) => document.getElementById(`bcc${tag}`).checked
-      ),
-    };
+  const recipient = document.getElementById("emailRecipient").value.trim();
+  const recipientsArray = recipient.split(",").map(email => email.trim());
+  const selectedTemplateOption = document.getElementById("templateSelect").selectedOptions[0];
+  const templateName = selectedTemplateOption?.textContent || "N/A";
+  const userId = document.getElementById("emailForm").dataset.userId;
 
-    console.log("Frontend Email Payload Sent:", payload); // Debug Log
+  const payload = {
+    recipient: recipientsArray.join(","), // Pass all recipients as a single comma-separated string
+    subject: document.getElementById("emailSubject").value,
+    body: document.getElementById("emailBody").value,
+    userId: userId || null, // Pass userId if present (from pre-filled data)
+    bccTags: Array.from(document.querySelectorAll(".bcc-tags input:checked")).map(el => el.value),
+  };
 
-    try {
-      const res = await fetch("/emails/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+  console.log("Payload to be Sent:", payload);
 
-      if (!res.ok) throw new Error("Failed to send email");
-      document.getElementById("statusMessage").textContent =
-        "Email sent successfully!";
-    } catch (error) {
-      console.error("Error sending email:", error);
-      document.getElementById("statusMessage").textContent =
-        "Error sending email.";
-    }
-  });
+  // Send email
+  try {
+    const emailResponse = await fetch("/emails/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
+    if (!emailResponse.ok) throw new Error("Failed to send email");
+    document.getElementById("statusMessage").textContent = "Email sent successfully!";
+  } catch (error) {
+    console.error("Error sending email:", error);
+    document.getElementById("statusMessage").textContent = "Error sending email.";
+  }
+});
 
 
 </script>

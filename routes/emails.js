@@ -3,6 +3,7 @@ const router = express.Router();
 const sendEmail = require('../utils/email');
 const { EmailTemplate, User, Subscription, UserSubscription } = require('../models');
 const { Op } = require('sequelize');
+const { DateTime } = require('luxon');
 
 // Function to Get Users by Tags
 async function getUsersByTags(tags) {
@@ -103,6 +104,17 @@ router.delete('/templates/:id', async (req, res) => {
   }
 });
 
+// Function to format dates
+const formatDate = (date) => {
+  if (!date) return 'N/A';
+  try {
+    return DateTime.fromISO(new Date(date).toISOString().split('T')[0]).toFormat('MMMM dd, yyyy');
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'N/A';
+  }
+};
+
 // Send an Email
 router.post('/send', async (req, res) => {
   try {
@@ -112,82 +124,138 @@ router.post('/send', async (req, res) => {
       return res.status(400).json({ error: 'Recipient, subject, and body are required.' });
     }
 
-    let replacements = {};
-
- // Load User Data if userId is provided
-if (userId) {
-  console.log("User ID Provided:", userId);  // Debug Log
-
-  const user = await User.findByPk(userId, {
-    include: {
-      model: UserSubscription,
-      include: Subscription,
-    },
-  });
-
-  if (!user) {
-    console.error("User Not Found for ID:", userId);
-    return res.status(404).json({ error: 'User not found' });
-  }
-
-  // Correctly Populate the Replacements Object
-  replacements = {
-    name: user.name || 'N/A',
-    email: user.email || 'N/A',
-    username: user.username || 'N/A',
-    password: user.password || 'N/A',
-    implayerInfo: user.implayerInfo || 'N/A',
-    deviceCount: user.deviceCount || 'N/A',
-    plexExpiration: user.UserSubscriptions.find(sub => sub.Subscription.type === 'Plex')?.nextRenewalDate || 'N/A',
-    iptvExpiration: user.UserSubscriptions.find(sub => sub.Subscription.type === 'IPTV')?.nextRenewalDate || 'N/A',
-  };
-
-  console.log("Populated Replacements:", replacements);  // Log the replacements object
-} else {
-  console.error("No User ID Provided in Request");
-}
-
-
-    // Replace placeholders in the email body
-    const filledBody = body.replace(/\{\{(.*?)\}\}/g, (_, key) => {
-      const trimmedKey = key.trim();
-      const replacementValue = replacements[trimmedKey];
-      console.log(`Replacing {{${trimmedKey}}} with:`, replacementValue || `{{${trimmedKey}}}`); 
-      return replacementValue !== undefined && replacementValue !== ''
-        ? replacementValue
-        : `{{${trimmedKey}}}`; // Leave the placeholder if not found
-    });
-
-    console.log("Final Filled Email Body:", filledBody);  // Log final email content
-
-    // Handle BCC Recipients
+    const recipients = recipient.split(',').map(email => email.trim());
+    let emailPromises = [];
     let bccRecipients = [];
+
+    // Handle BCC Recipients and Prepare Replacements
     if (bccTags && bccTags.length > 0) {
+      console.log("Resolving users for BCC tags:", bccTags);
+
       const users = await User.findAll({
         where: {
           [Op.or]: bccTags.map(tag => ({
-            tags: { [Op.like]: `%${tag}%` }
+            tags: { [Op.like]: `%${tag}%` },
           })),
         },
+        include: {
+          model: UserSubscription,
+          include: Subscription,
+        },
       });
-      bccRecipients = users.map(user => user.email);
+
+      emailPromises = users.map(async (user) => {
+        const iptvSubscription = user.UserSubscriptions.find(sub => sub.Subscription.type === 'IPTV');
+        const plexSubscription = user.UserSubscriptions.find(sub => sub.Subscription.type === 'Plex');
+
+        const formatDate = (dateString) => {
+          if (!dateString) return 'N/A';
+          return DateTime.fromISO(new Date(dateString).toISOString().split('T')[0]).toFormat('MMMM dd, yyyy');
+        };
+
+        const replacements = {
+          name: user.name || 'N/A',
+          email: user.email || 'N/A',
+          username: user.username || 'N/A',
+          password: user.password || 'N/A',
+          implayerInfo: user.implayerInfo || 'N/A',
+          deviceCount: user.deviceCount || 'N/A',
+          subscriptionName: iptvSubscription?.Subscription?.name || 'N/A',
+          iptvExpiration: iptvSubscription?.nextRenewalDate ? formatDate(iptvSubscription.nextRenewalDate) : 'N/A',
+          plexExpiration: plexSubscription?.nextRenewalDate ? formatDate(plexSubscription.nextRenewalDate) : 'N/A',
+        };
+
+        console.log("BCC User Replacements:", replacements);
+
+        // Replace placeholders in the body for each BCC user
+        const filledBody = body.replace(/\{\{(.*?)\}\}/g, (_, key) => {
+          const trimmedKey = key.trim();
+          const replacementValue = replacements[trimmedKey];
+          console.log(`Replacing {{${trimmedKey}}} with:`, replacementValue || `[MISSING: ${trimmedKey}]`);
+          return replacementValue !== undefined
+            ? replacementValue
+            : `[MISSING: ${trimmedKey}]`; // Leave placeholder if not found
+        });
+
+        console.log("Final Filled Email Body for BCC:", filledBody);
+
+        // Send the email to the BCC user
+        await sendEmail(user.email, subject, filledBody, []);
+      });
     }
 
-    // Send the email and log success
-    try {
-      await sendEmail(recipient, subject, filledBody, bccRecipients);
-      console.log("Email Sent with Body:", filledBody);  // Confirm email sent
-      res.json({ message: 'Email sent successfully' });
-    } catch (error) {
-      console.error('Error sending email:', error);
-      res.status(500).json({ error: 'Failed to send email' });
+    // Handle Multiple Recipients Entered Manually
+    if (recipients && recipients.length > 0) {
+      console.log("Processing multiple recipients:", recipients);
+
+      const recipientPromises = recipients.map(async (email) => {
+        // Fetch user data based on email
+        const user = await User.findOne({
+          where: { email },
+          include: {
+            model: UserSubscription,
+            include: Subscription,
+          },
+        });
+
+        if (!user) {
+          console.warn(`User not found for email: ${email}`);
+          return; // Skip this email if user not found
+        }
+
+        const iptvSubscription = user.UserSubscriptions.find(sub => sub.Subscription.type === 'IPTV');
+        const plexSubscription = user.UserSubscriptions.find(sub => sub.Subscription.type === 'Plex');
+
+        const formatDate = (dateString) => {
+          if (!dateString) return 'N/A';
+          return DateTime.fromISO(new Date(dateString).toISOString().split('T')[0]).toFormat('MMMM dd, yyyy');
+        };
+
+        const replacements = {
+          name: user.name || 'N/A',
+          email: user.email || 'N/A',
+          username: user.username || 'N/A',
+          password: user.password || 'N/A',
+          implayerInfo: user.implayerInfo || 'N/A',
+          deviceCount: user.deviceCount || 'N/A',
+          subscriptionName: iptvSubscription?.Subscription?.name || 'N/A',
+          iptvExpiration: iptvSubscription?.nextRenewalDate ? formatDate(iptvSubscription.nextRenewalDate) : 'N/A',
+          plexExpiration: plexSubscription?.nextRenewalDate ? formatDate(plexSubscription.nextRenewalDate) : 'N/A',
+        };
+
+        console.log(`Replacements for ${email}:`, replacements);
+
+        // Replace placeholders in the body
+        const filledBody = body.replace(/\{\{(.*?)\}\}/g, (_, key) => {
+          const trimmedKey = key.trim();
+          const replacementValue = replacements[trimmedKey];
+          console.log(`Replacing {{${trimmedKey}}} with:`, replacementValue || `[MISSING: ${trimmedKey}]`);
+          return replacementValue !== undefined
+            ? replacementValue
+            : `[MISSING: ${trimmedKey}]`; // Leave placeholder if not found
+        });
+
+        console.log(`Final Email Body for ${email}:`, filledBody);
+
+        // Send the email
+        await sendEmail(email, subject, filledBody, []);
+      });
+
+      emailPromises.push(...recipientPromises);
     }
 
+    await Promise.all(emailPromises);
+    res.json({ message: 'Emails sent successfully' });
   } catch (error) {
     console.error('Unexpected Error:', error);
     res.status(500).json({ error: 'An unexpected error occurred' });
   }
 });
+
+
+
+module.exports = router;
+
 
 
 module.exports = router;
