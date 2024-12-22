@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./database.sqlite:/usr/src/app/database.sqlite  # Persist database file
+      - .:/usr/src/app                                  # Mount the project for development
+      - /usr/src/app/node_modules                       # Ensure node_modules isn't overwritten
+    environment:
+      NODE_ENV: production
+    stdin_open: true
+    tty: true

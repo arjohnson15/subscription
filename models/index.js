@@ -5,7 +5,7 @@ const { Sequelize, DataTypes } = require('sequelize');
 // Initialize Sequelize
 const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: './database.sqlite',
+  storage: path.resolve(__dirname, '../database.sqlite'),
 });
 
 const db = {};
