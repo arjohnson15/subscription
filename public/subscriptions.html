@@ -109,21 +109,28 @@
       color: black;
     }
 
+    /* Table Styles */
+    .table-container {
+      width: 90%;
+      margin: 20px 0;
+      overflow-x: auto; /* Allow horizontal scrolling */
+    }
+
     table {
-      width: 80%;
-      margin: 20px 0 40px;
+      width: 100%;
       border-collapse: collapse;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid #22bdee;
     }
 
     th, td {
-      padding: 12px 15px;
+      padding: 8px 10px;
       text-align: center;
       color: white;
       font-family: Arial, sans-serif;
       font-size: 1rem;
       border: 1px solid #22bdee;
+      white-space: nowrap; /* Prevent text wrapping */
     }
 
     th {
@@ -132,6 +139,23 @@
       text-transform: uppercase;
     }
 
+    /* Adjustments for Smaller Screens */
+    @media (max-width: 768px) {
+      th, td {
+        font-size: 0.8rem;
+        padding: 6px 8px;
+      }
+
+      .table-container {
+        width: 100%;
+      }
+
+      form {
+        width: 90%;
+      }
+    }
+
+    /* Modal Styling */
     #editSubscriptionModal {
       position: fixed;
       top: 0;
@@ -148,7 +172,8 @@
       background: #333;
       padding: 20px;
       border-radius: 8px;
-      width: 50%;
+      width: 90%;
+      max-width: 400px;
       color: white;
       border: 2px solid #22bdee;
     }
@@ -210,18 +235,20 @@
     <button type="submit">Save Subscription</button>
   </form>
 
-  <table id="subscriptionsTable">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Duration (Months)</th>
-        <th>Streams</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="table-container">
+    <table id="subscriptionsTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Duration (Months)</th>
+          <th>Streams</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
   <!-- Edit Subscription Modal -->
   <div id="editSubscriptionModal">
@@ -261,6 +288,8 @@
       </form>
     </div>
   </div>
+</body>
+</html>
 
   
 <script>
