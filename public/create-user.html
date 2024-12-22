@@ -287,54 +287,49 @@ async function fetchUserData() {
 }
 
 document.getElementById('createUserForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
+  e.preventDefault(); // Prevents default form submission behavior
 
-  const userId = document.getElementById('userId').value;
-  const endpoint = userId ? `/users/${userId}` : '/users';
-  const method = userId ? 'PUT' : 'POST';
+  const userId = document.getElementById('userId').value; // Check if editing an existing user
+  console.log('User ID:', userId); // Add this line to log the userId
 
-const payload = {
-  id: userId || null,
-  name: document.getElementById('userName').value,
-  email: document.getElementById('userEmail').value,
-  owner: document.getElementById('owner').value || '',
-  username: document.getElementById('username').value || '',
-  password: document.getElementById('password').value || '',
-  implayerInfo: document.getElementById('implayerInfo').value || '',
-  deviceCount: parseInt(document.getElementById('deviceCount').value) || 0,
-  freeUser: document.getElementById('freeUser').checked || false,
-  tags: [
-    document.getElementById('tagPlex1').checked ? 'Plex1' : null,
-    document.getElementById('tagPlex2').checked ? 'Plex2' : null,
-    document.getElementById('tagIPTV').checked ? 'IPTV' : null,
-  ].filter(Boolean),
+  const endpoint = userId ? `/users/${userId}` : '/users'; // POST for new, PUT for editing
+  const method = userId ? 'PUT' : 'POST'; // Use PUT for update, POST for create
 
-subscriptions: [
-  document.getElementById('plexSelect').value
-    ? {
-        id: document.getElementById('plexSelect').value,
-        type: 'Plex',
-        nextRenewalDate: document.getElementById('plexExpiration').value || null,
-      }
-    : null,
-  document.getElementById('iptvSelect').value
-    ? {
-        id: document.getElementById('iptvSelect').value,
-        type: 'IPTV',
-        nextRenewalDate: document.getElementById('iptvExpiration').value || null,
-      }
-    : null,
-].filter(Boolean),
+  // Collect the form data
+  const payload = {
+    id: userId || null,  // Handle creating or updating a user
+    name: document.getElementById('userName').value,
+    email: document.getElementById('userEmail').value,
+    owner: document.getElementById('owner').value || "",
+    username: document.getElementById('username').value || "",
+    password: document.getElementById('password').value || "",
+    implayerInfo: document.getElementById('implayerInfo').value || "",
+    deviceCount: parseInt(document.getElementById('deviceCount').value) || 0,
+    freeUser: document.getElementById('freeUser').checked || false,
 
+    // Tags (Collect these fields too)
+    tags: [
+      document.getElementById('tagPlex1').checked ? 'Plex1' : null,
+      document.getElementById('tagPlex2').checked ? 'Plex2' : null,
+      document.getElementById('tagIPTV').checked ? 'IPTV' : null,
+    ].filter(Boolean),
 
-  removals: [
-    document.getElementById('removePlex').checked ? 'Plex' : null,
-    document.getElementById('removeIPTV').checked ? 'IPTV' : null,
-  ].filter(Boolean),
-};
+    // Subscriptions (Collect these as well)
+    subscriptions: [
+      document.getElementById('plexSelect').value
+        ? { id: document.getElementById('plexSelect').value, type: 'Plex', nextRenewalDate: document.getElementById('plexExpiration').value }
+        : null,
+      document.getElementById('iptvSelect').value
+        ? { id: document.getElementById('iptvSelect').value, type: 'IPTV', nextRenewalDate: document.getElementById('iptvExpiration').value }
+        : null,
+    ].filter(Boolean),
+  };
 
+  // Log the payload to see if all the form data is being collected
+  console.log('Payload:', JSON.stringify(payload));
 
   try {
+    // Sending data to the backend
     const res = await fetch(endpoint, {
       method,
       headers: { 'Content-Type': 'application/json' },
@@ -343,12 +338,15 @@ subscriptions: [
 
     if (!res.ok) throw new Error('Failed to save user');
 
-    window.location.href = 'users.html';
+    // Redirect after save
+    window.location.href = '/users.html';  // Redirect to users page after saving
   } catch (error) {
-    document.getElementById('errorMessage').textContent = 'Error saving user.';
     console.error('Error saving user:', error);
+    document.getElementById('errorMessage').textContent = 'Error saving user.'; // Display error
   }
 });
+;
+
 
 // Initialize Form on Load
 window.addEventListener('load', () => {

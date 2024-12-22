@@ -99,20 +99,24 @@ router.post('/', async (req, res) => {
   }
 });
 
+
 // Update User by ID
 router.put('/:id', async (req, res) => {
+  console.log('Received data:', req.body); // Log incoming data for debugging
+
   try {
     const { id } = req.params;
-    const user = await User.findByPk(id);
+    const {
+      name, email, tags, username, password, implayerInfo,
+      deviceCount, freeUser, subscriptions, removals, owner,
+    } = req.body;
 
+    const user = await User.findByPk(id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const {
-      name, email, tags, username, password, implayerInfo, deviceCount, freeUser, subscriptions, removals, owner
-    } = req.body;
-
+    // Update user fields
     await user.update({
       name,
       email,
@@ -122,62 +126,83 @@ router.put('/:id', async (req, res) => {
       implayerInfo: implayerInfo || '',
       deviceCount: deviceCount || 0,
       freeUser: freeUser || false,
-      owner: owner || ''
+      owner: owner || '',
+    });
+    console.log('Updated user:', user);
+
+    // Handle removals
+ if (removals && removals.length > 0) {
+  for (const type of removals) {
+    console.log(`Removing subscription of type: ${type} for user ID: ${id}`);
+    await UserSubscription.destroy({
+      where: { userId: id, type },
+    });
+  }
+}
+
+// Automatically remove Plex subscription if Free User is enabled
+if (freeUser) {
+  console.log(`Free User selected. Removing Plex subscription for user ID: ${id}`);
+  await UserSubscription.destroy({
+    where: { userId: id, type: 'Plex' },
+  });
+}
+
+    // Handle subscriptions
+if (subscriptions && subscriptions.length > 0) {
+  for (const subscription of subscriptions) {
+    const { type, subscriptionId, nextRenewalDate } = subscription;
+
+    // Fetch the subscription details
+    const subDetails = await Subscription.findByPk(subscriptionId);
+    if (!subDetails) {
+      console.warn(`Subscription ID ${subscriptionId} not found`);
+      continue;
+    }
+
+    // Calculate `startDate` and use `nextRenewalDate` if provided
+    const startDate = new Date();
+    const renewalDate = nextRenewalDate ? new Date(nextRenewalDate) : new Date();
+    if (!nextRenewalDate) {
+      renewalDate.setMonth(startDate.getMonth() + subDetails.renewalPeriodMonths);
+    }
+
+    // Check if the subscription exists for the user
+    const existing = await UserSubscription.findOne({
+      where: { userId: id, type },
     });
 
-    if (subscriptions && subscriptions.length > 0) {
-      for (const sub of subscriptions) {
-        const subscription = await Subscription.findByPk(sub.id);
-        if (subscription) {
-          await UserSubscription.destroy({
-            where: {
-              userId: user.id,
-              type: subscription.type,
-            },
-          });
-
-          const startDate = new Date();
-          const nextRenewalDate = sub.nextRenewalDate
-            ? new Date(sub.nextRenewalDate)
-            : new Date(startDate.setMonth(startDate.getMonth() + subscription.renewalPeriodMonths));
-
-          await UserSubscription.create({
-            userId: user.id,
-            subscriptionId: subscription.id,
-            startDate,
-            nextRenewalDate,
-            type: subscription.type,
-          });
-        }
-      }
-    }
-
-    if (removals && removals.length > 0) {
-      await UserSubscription.destroy({
-        where: {
-          userId: user.id,
-          type: {
-            [Sequelize.Op.in]: removals,
-          },
-        },
+    if (existing) {
+      // Update the subscription
+      await existing.update({
+        subscriptionId,
+        startDate,
+        nextRenewalDate: renewalDate,
       });
-    }
-
-    if (freeUser) {
-      await UserSubscription.destroy({
-        where: {
-          userId: user.id,
-          type: 'Plex',
-        },
+      console.log(`Updated subscription: ${type} for user ID: ${id}`);
+    } else {
+      // Create a new subscription
+      await UserSubscription.create({
+        userId: id,
+        type,
+        subscriptionId,
+        startDate,
+        nextRenewalDate: renewalDate,
       });
+      console.log(`Created new subscription: ${type} for user ID: ${id}`);
     }
+  }
+}
+
 
     res.status(200).json({ message: 'User updated successfully' });
   } catch (error) {
     console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Failed to update user' });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+
 
 // Fetch All Users
 router.get('/', async (req, res) => {
@@ -247,10 +272,14 @@ router.get("/email/:email", async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+
     const user = await User.findByPk(id, {
       include: {
         model: UserSubscription,
-        include: Subscription,
+        include: {
+          model: Subscription,
+          attributes: ['id', 'name', 'type'], // Include subscription name and type
+        },
       },
     });
 
@@ -260,8 +289,8 @@ router.get('/:id', async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Failed to fetch user' });
+    console.error('Error fetching user data:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

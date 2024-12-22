@@ -115,16 +115,52 @@ const formatDate = (date) => {
   }
 };
 
+// Serve the email page for a specific user
+router.get('/', async (req, res) => {
+  try {
+    const { userId, email } = req.query;
+
+    if (!userId || !email) {
+      return res.status(400).json({ error: 'User ID and email are required.' });
+    }
+
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    // Optionally, prefetch templates to populate in the frontend
+    const templates = await EmailTemplate.findAll();
+
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        password: user.password,
+      },
+      templates,
+    });
+  } catch (error) {
+    console.error('Error serving email page:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+
 // Send an Email
 router.post('/send', async (req, res) => {
   try {
-    const { recipient, subject, body, userId, bccTags } = req.body;
+    const { recipient, cc, subject, body, userId, bccTags } = req.body;
 
     if (!recipient || !subject || !body) {
       return res.status(400).json({ error: 'Recipient, subject, and body are required.' });
     }
 
     const recipients = recipient.split(',').map(email => email.trim());
+    const ccRecipients = cc ? cc.split(',').map(email => email.trim()) : [];
     let emailPromises = [];
     let bccRecipients = [];
 
@@ -171,7 +207,6 @@ router.post('/send', async (req, res) => {
         const filledBody = body.replace(/\{\{(.*?)\}\}/g, (_, key) => {
           const trimmedKey = key.trim();
           const replacementValue = replacements[trimmedKey];
-          console.log(`Replacing {{${trimmedKey}}} with:`, replacementValue || `[MISSING: ${trimmedKey}]`);
           return replacementValue !== undefined
             ? replacementValue
             : `[MISSING: ${trimmedKey}]`; // Leave placeholder if not found
@@ -229,7 +264,6 @@ router.post('/send', async (req, res) => {
         const filledBody = body.replace(/\{\{(.*?)\}\}/g, (_, key) => {
           const trimmedKey = key.trim();
           const replacementValue = replacements[trimmedKey];
-          console.log(`Replacing {{${trimmedKey}}} with:`, replacementValue || `[MISSING: ${trimmedKey}]`);
           return replacementValue !== undefined
             ? replacementValue
             : `[MISSING: ${trimmedKey}]`; // Leave placeholder if not found
@@ -237,8 +271,8 @@ router.post('/send', async (req, res) => {
 
         console.log(`Final Email Body for ${email}:`, filledBody);
 
-        // Send the email
-        await sendEmail(email, subject, filledBody, []);
+        // Send the email with CC
+        await sendEmail(email, subject, filledBody, ccRecipients);
       });
 
       emailPromises.push(...recipientPromises);
@@ -251,11 +285,6 @@ router.post('/send', async (req, res) => {
     res.status(500).json({ error: 'An unexpected error occurred' });
   }
 });
-
-
-
-module.exports = router;
-
 
 
 module.exports = router;

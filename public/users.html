@@ -150,13 +150,13 @@
     #userInfoModal {
       display: none;
       position: fixed;
-      left: 50%;
       top: 50%;
+      left: 50%;
       transform: translate(-50%, -50%);
       background: black;
       border: 3px solid #b833ff;
       border-radius: 8px;
-      padding: 25px 20px;
+      padding: 25px;
       width: 400px;
       color: white;
       z-index: 9999;
@@ -192,6 +192,108 @@
       margin: 8px 0;
       font-size: 1rem;
     }
+
+    #editUserModal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 70%;
+      max-width: 850px;
+      max-height: 90%;
+      background: #222;
+      border: 2px solid #22bdee;
+      border-radius: 12px;
+      padding: 20px;
+      color: white;
+      z-index: 9999;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+      overflow-y: auto;
+    }
+
+    .modal-content {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      padding: 10px;
+    }
+
+    .modal-content label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+      color: #b833ff;
+      font-weight: bold;
+    }
+
+    .modal-content input,
+    .modal-content select {
+      width: 100%;
+      padding: 8px;
+      background: #333;
+      color: white;
+      border: 1px solid #22bdee;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    .modal-content input[type="checkbox"] {
+      width: auto;
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .modal-section {
+      grid-column: 1 / -1;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #444;
+    }
+
+    .modal-section-title {
+      margin-bottom: 10px;
+      color: #22bdee;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      text-align: left;
+    }
+
+    .modal-buttons {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .modal-buttons button {
+      padding: 8px 16px;
+      background: #b833ff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      margin-left: 10px;
+    }
+
+    .modal-buttons button:hover {
+      background: #22bdee;
+      color: black;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 1.5rem;
+      color: #ff3333;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -212,7 +314,7 @@
         <th>Email <button onclick="sortTableByText('email')" class="sort-btn">⬇</button></th>
         <th>Owner</th>
         <th>
-          Tags 
+          Tags
           <select id="tagFilter" onchange="filterByTag()">
             <option value="">All</option>
             <option value="Plex1">Plex1</option>
@@ -230,182 +332,446 @@
     </tbody>
   </table>
 
-  <!-- Corrected Modal Window -->
-  <div id="userInfoModal">
-    <button class="close-btn" onclick="closeUserInfoModal()">×</button>
-    <h3 class="modal-header">User Information</h3>
-    <p><strong>Name:</strong> <span id="infoName"></span></p>
-    <p><strong>Email:</strong> <span id="infoEmail"></span></p>
-    <p><strong>Owner:</strong> <span id="infoOwner"></span></p>
-    <p><strong>Tags:</strong> <span id="infoTagsText"></span></p>
+  <!-- User Info Modal -->
+<div id="userInfoModal">
+  <button class="close-btn" onclick="closeUserInfoModal()">×</button>
+  <h3 class="modal-header">User Information</h3>
+  <p><strong>Name:</strong> <span id="infoName"></span></p>
+  <p><strong>Email:</strong> <span id="infoEmail"></span></p>
+  <p><strong>Owner:</strong> <span id="infoOwner"></span></p>
+  <p><strong>Tags:</strong> <span id="infoTagsText"></span></p>
 
-    <div class="modal-section-title">Subscriptions</div>
-    <p><strong>Plex Subscription:</strong> <span id="infoPlexName"></span></p>
-    <p><strong>Plex Expiration Date:</strong> <span id="infoPlexExpiration"></span></p>
-    <p><strong>IPTV Subscription:</strong> <span id="infoIptvName"></span></p>
-    <p><strong>IPTV Expiration Date:</strong> <span id="infoIptvExpiration"></span></p>
-  </div>
+  <div class="modal-section-title">Subscriptions</div>
+  <p><strong>Plex Subscription:</strong> <span id="infoPlexName"></span></p>
+  <p><strong>Plex Expiration Date:</strong> <span id="infoPlexExpiration"></span></p>
+  <p><strong>IPTV Subscription:</strong> <span id="infoIptvName"></span></p>
+  <p><strong>IPTV Expiration Date:</strong> <span id="infoIptvExpiration"></span></p>
+
+  <div class="modal-section-title">Account Details</div>
+  <p><strong>Username:</strong> <span id="infoUsername"></span></p>
+  <p><strong>Password:</strong> <span id="infoPassword"></span></p>
+  <p><strong>IMPlayer Code:</strong> <span id="infoImplayerInfo"></span></p>
+  <p><strong>IMPlayer Device Count:</strong> <span id="infoDeviceCount"></span></p>
+</div>
+
+ <!-- Edit User Modal -->
+<div id="editUserModal">
+  <button class="close-modal" onclick="closeEditUserModal()">×</button>
+  <h3 class="modal-header">Edit User</h3>
+  <form id="editUserForm" class="modal-content" onsubmit="updateUserHandler(event)">
+    <!-- Basic Information Section -->
+    <input type="hidden" id="editUserId">
+    <div>
+      <label for="editUserName">Name:</label>
+      <input type="text" id="editUserName" required>
+    </div>
+
+    <div>
+      <label for="editUserEmail">Email:</label>
+      <input type="email" id="editUserEmail" required>
+    </div>
+
+    <div>
+      <label for="editUserOwner">Owner:</label>
+      <input type="text" id="editUserOwner">
+    </div>
+
+    <div>
+      <label for="editUsername">Username:</label>
+      <input type="text" id="editUsername">
+    </div>
+
+    <div>
+      <label for="editPassword">Password:</label>
+      <input type="text" id="editPassword">
+    </div>
+
+    <div>
+      <label for="editImplayerInfo">IMPlayer Code:</label>
+      <input type="text" id="editImplayerInfo">
+    </div>
+
+    <div>
+      <label for="editDeviceCount">IMPlayer Device Count:</label>
+      <input type="number" id="editDeviceCount" min="0">
+    </div>
+
+    <div>
+      <label>
+        <input type="checkbox" id="editFreeUser"> Free User
+      </label>
+    </div>
+
+    <!-- Tags Section -->
+    <div class="modal-section">
+      <h4 class="modal-section-title">Tags</h4>
+      <label><input type="checkbox" id="editTagPlex1" value="Plex1"> Plex 1</label>
+      <label><input type="checkbox" id="editTagPlex2" value="Plex2"> Plex 2</label>
+      <label><input type="checkbox" id="editTagIPTV" value="IPTV"> IPTV</label>
+    </div>
+
+    <!-- Subscriptions Section -->
+    <div class="modal-section">
+      <h4 class="modal-section-title">Subscriptions</h4>
+
+      <div>
+        <label for="editPlexSubscription">Select Plex Subscription:</label>
+        <select id="editPlexSubscription">
+          <option value="">-- No Plex Selected --</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="editPlexExpiration">Plex Expiration Date:</label>
+        <input type="date" id="editPlexExpiration">
+      </div>
+
+      <div>
+        <label>
+          <input type="checkbox" id="editRemovePlex"> Remove Plex Subscription
+        </label>
+      </div>
+
+      <div>
+        <label for="editIptvSubscription">Select IPTV Subscription:</label>
+        <select id="editIptvSubscription">
+          <option value="">-- No IPTV Selected --</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="editIptvExpiration">IPTV Expiration Date:</label>
+        <input type="date" id="editIptvExpiration">
+      </div>
+
+      <div>
+        <label>
+          <input type="checkbox" id="editRemoveIptv"> Remove IPTV Subscription
+        </label>
+      </div>
+    </div>
+
+    <!-- Buttons Section -->
+    <div class="modal-buttons">
+      <button type="submit">Save Changes</button>
+      <button type="button" onclick="closeEditUserModal()">Cancel</button>
+    </div>
+  </form>
+</div>
+
 
 <script>
-const usersTable = document.querySelector("#usersTable tbody");
+  const usersTable = document.querySelector("#usersTable tbody");
 
-async function loadUsers() {
-  try {
-    const res = await fetch('/users');
-    if (!res.ok) throw new Error('Failed to load users');
+  // Load Users into the Table
+  async function loadUsers() {
+    try {
+      const res = await fetch('/users');
+      if (!res.ok) throw new Error('Failed to load users');
 
-    const users = await res.json();
-    renderTable(users);
-  } catch (error) {
-    console.error('Error loading users:', error);
-  }
-}
-
-function renderTable(users) {
-  usersTable.innerHTML = '';
-  users.forEach(user => {
-    const tagsArray = Array.isArray(user.tags) ? user.tags : user.tags.split(',').map(t => t.trim());
-
-    const tagIcons = tagsArray.map(tag => {
-      if (tag === 'Plex1') return `<img src="./images/plex1.png" alt="plex1" class="tag-icon">`;
-      if (tag === 'Plex2') return `<img src="./images/plex2.png" alt="plex2" class="tag-icon">`;
-      if (tag === 'IPTV') return `<img src="./images/iptv.png" alt="iptv" class="tag-icon">`;
-      return '';
-    }).join(' ');
-
-    const plexExpiration = user.freeUser
-      ? `<span class="free-text">FREE</span>`
-      : (user.plexExpiration || '');
-
-    const iptvExpiration = user.iptvExpiration || 'N/A';
-
-    const row = `
-      <tr id="user-${user.id}">
-        <td data-column="name">${user.name}</td>
-        <td data-column="email">${user.email}</td>
-        <td>${user.owner || 'N/A'}</td>
-        <td class="tags">${tagIcons}</td>
-        <td data-column="plexExpiration">${plexExpiration}</td>
-        <td data-column="iptvExpiration">${iptvExpiration}</td>
-        <td>
-          <button class="action-btn action-view" onclick="showUserInfo(${user.id})">View</button>
-          <button class="action-btn action-edit" onclick="editUser(${user.id})">Edit</button>
-          <button class="action-btn action-email" onclick="sendEmail(${user.id}, '${user.email}')">Send Email</button>
-          <button class="action-btn action-delete" onclick="deleteUser(${user.id})">Delete</button>
-        </td>
-      </tr>
-    `;
-    usersTable.insertAdjacentHTML('beforeend', row);
-  });
-}
-
-let sortDirections = {
-  plexExpiration: "asc",
-  iptvExpiration: "asc",
-  name: "asc",
-  email: "asc"
-};
-
-// Sort by Text Function (Name & Email)
-function sortTableByText(column) {
-  const rows = Array.from(usersTable.querySelectorAll("tr"));
-  const currentDirection = sortDirections[column];
-
-  const sortedRows = rows.sort((a, b) => {
-    const cellA = a.querySelector(`td[data-column="${column}"]`).textContent.trim().toLowerCase();
-    const cellB = b.querySelector(`td[data-column="${column}"]`).textContent.trim().toLowerCase();
-
-    return currentDirection === "asc"
-      ? cellA.localeCompare(cellB)
-      : cellB.localeCompare(cellA);
-  });
-
-  // Update sort direction
-  sortDirections[column] = currentDirection === "asc" ? "desc" : "asc";
-
-  // Clear and rebuild the table
-  usersTable.innerHTML = '';
-  sortedRows.forEach(row => usersTable.appendChild(row));
-}
-
-function sortTableByDate(column) {
-  const rows = Array.from(usersTable.querySelectorAll("tr"));
-  const currentDirection = sortDirections[column];
-
-  const sortedRows = rows.sort((a, b) => {
-    const cellA = a.querySelector(`td[data-column="${column}"]`).textContent.trim();
-    const cellB = b.querySelector(`td[data-column="${column}"]`).textContent.trim();
-
-    // Handle "FREE" and missing dates
-    if (cellA === "FREE") return currentDirection === "asc" ? -1 : 1;
-    if (cellB === "FREE") return currentDirection === "asc" ? 1 : -1;
-    if (!cellA) return currentDirection === "asc" ? 1 : -1;
-    if (!cellB) return currentDirection === "asc" ? -1 : 1;
-
-    const dateA = Date.parse(cellA) || 0;
-    const dateB = Date.parse(cellB) || 0;
-
-    return currentDirection === "asc" ? dateA - dateB : dateB - dateA;
-  });
-
-  // Update sort direction
-  sortDirections[column] = currentDirection === "asc" ? "desc" : "asc";
-
-  // Clear and rebuild the table
-  usersTable.innerHTML = '';
-  sortedRows.forEach(row => usersTable.appendChild(row));
-}
-
-
-function filterByTag() {
-  const filterValue = document.getElementById("tagFilter").value.toLowerCase();
-  const tableRows = document.querySelectorAll("#usersTable tbody tr");
-
-  tableRows.forEach(row => {
-    const tagIcons = row.querySelectorAll(".tags img");
-    const tags = Array.from(tagIcons).map(img => img.alt.toLowerCase());
-
-    if (!filterValue || tags.includes(filterValue)) {
-      row.style.display = "";  // Show matching rows
-    } else {
-      row.style.display = "none";  // Hide non-matching rows
+      const users = await res.json();
+      renderTable(users);
+    } catch (error) {
+      console.error('Error loading users:', error);
     }
-  });
-}
+  }
 
-// Existing Functions
+  // Render Users in the Table
+  function renderTable(users) {
+    if (!usersTable) {
+      console.error('Error: Table body is missing!');
+      return;
+    }
+
+    usersTable.innerHTML = '';
+    users.forEach(user => {
+      const tagsArray = Array.isArray(user.tags) ? user.tags : (user.tags || '').split(',').map(tag => tag.trim());
+
+      const tagIcons = tagsArray.map(tag => {
+        if (tag === 'Plex1') return `<img src="./images/plex1.png" alt="Plex1" class="tag-icon">`;
+        if (tag === 'Plex2') return `<img src="./images/plex2.png" alt="Plex2" class="tag-icon">`;
+        if (tag === 'IPTV') return `<img src="./images/iptv.png" alt="IPTV" class="tag-icon">`;
+        return '';
+      }).join(' ');
+
+      const plexExpiration = user.freeUser
+        ? `<span class="free-text">FREE</span>`
+        : (user.plexExpiration || 'N/A');
+
+      const iptvExpiration = user.iptvExpiration || 'N/A';
+
+      const row = `
+        <tr id="user-${user.id}">
+          <td data-column="name">${user.name}</td>
+          <td data-column="email">${user.email}</td>
+          <td>${user.owner || 'N/A'}</td>
+          <td>${tagIcons}</td>
+          <td data-column="plexExpiration">${plexExpiration}</td>
+          <td data-column="iptvExpiration">${iptvExpiration}</td>
+          <td>
+            <button class="action-btn action-view" onclick="showUserInfo(${user.id})">View</button>
+            <button class="action-btn action-edit" onclick="editUser(${user.id})">Edit</button>
+            <button class="action-btn action-email" onclick="sendEmail(${user.id}, '${user.email}')">Email</button>
+            <button class="action-btn action-delete" onclick="deleteUser(${user.id})">Delete</button>
+          </td>
+        </tr>
+      `;
+      usersTable.insertAdjacentHTML('beforeend', row);
+    });
+  }
+
+  // Show User Info Modal
 function showUserInfo(id) {
-  const user = document.getElementById(`user-${id}`);
-  document.getElementById("infoName").textContent = user.cells[0].textContent;
-  document.getElementById("infoEmail").textContent = user.cells[1].textContent;
-  document.getElementById("infoOwner").textContent = user.cells[2].textContent;
-  document.getElementById("infoTagsText").innerHTML = user.cells[3].innerHTML;
-  document.getElementById("infoPlexExpiration").textContent = user.cells[4].textContent;
-  document.getElementById("infoIptvExpiration").textContent = user.cells[5].textContent;
-  document.getElementById("userInfoModal").style.display = "block";
+  const userRow = document.getElementById(`user-${id}`);
+  if (!userRow) {
+    console.error(`User row with ID user-${id} not found.`);
+    return;
+  }
+
+  const cells = userRow.getElementsByTagName('td');
+  document.getElementById('infoName').textContent = cells[0]?.textContent || 'N/A';
+  document.getElementById('infoEmail').textContent = cells[1]?.textContent || 'N/A';
+  document.getElementById('infoOwner').textContent = cells[2]?.textContent || 'N/A';
+  document.getElementById('infoTagsText').innerHTML = cells[3]?.innerHTML || 'N/A';
+  document.getElementById('infoPlexExpiration').textContent = cells[4]?.textContent || 'N/A';
+  document.getElementById('infoIptvExpiration').textContent = cells[5]?.textContent || 'N/A';
+
+  // Fetch additional data from the backend
+  fetch(`/users/${id}`)
+    .then((res) => {
+      if (!res.ok) throw new Error('Failed to fetch user data');
+      return res.json();
+    })
+    .then((user) => {
+      // Username, Password, IMPlayer Info
+      document.getElementById('infoUsername').textContent = user.username || 'N/A';
+      document.getElementById('infoPassword').textContent = user.password || 'N/A';
+      document.getElementById('infoImplayerInfo').textContent = user.implayerInfo || 'N/A';
+      document.getElementById('infoDeviceCount').textContent = user.deviceCount || 'N/A';
+
+      // Subscriptions
+      const plexName = user.UserSubscriptions.find((sub) => sub.type === 'Plex')?.Subscription?.name || 'N/A';
+      const iptvName = user.UserSubscriptions.find((sub) => sub.type === 'IPTV')?.Subscription?.name || 'N/A';
+
+      document.getElementById('infoPlexName').textContent = plexName;
+      document.getElementById('infoIptvName').textContent = iptvName;
+
+      document.getElementById('userInfoModal').style.display = 'block';
+    })
+    .catch((error) => console.error('Error fetching user data:', error));
 }
 
-function closeUserInfoModal() {
-  document.getElementById("userInfoModal").style.display = "none";
-}
+  function closeUserInfoModal() {
+    document.getElementById("userInfoModal").style.display = "none";
+  }
 
+// Send Email Function
 function sendEmail(userId, email) {
-  window.location.href = `email-manager.html?userId=${userId}&email=${encodeURIComponent(email)}`;
+  // Redirect to email manager with the user's email prefilled
+  const url = `/email-manager.html?email=${encodeURIComponent(email)}&userId=${userId}`;
+  window.location.href = url;
 }
 
-function editUser(userId) {
-  window.location.href = `create-user.html?id=${userId}`;
-}
 
-async function deleteUser(userId) {
-  if (confirm('Are you sure you want to delete this user?')) {
-    const res = await fetch(`/users/${userId}`, { method: 'DELETE' });
-    if (res.ok) document.getElementById(`user-${userId}`).remove();
+// Open Edit User Modal
+async function editUser(userId) {
+  try {
+    const res = await fetch(`/users/${userId}`);
+    if (!res.ok) throw new Error('Failed to fetch user data');
+
+    const user = await res.json();
+
+    // Fetch available subscriptions
+    const subsRes = await fetch('/subscriptions');
+    if (!subsRes.ok) throw new Error('Failed to fetch subscriptions');
+
+    const subscriptions = await subsRes.json();
+
+    // Populate Plex Dropdown
+    const plexDropdown = document.getElementById('editPlexSubscription');
+    plexDropdown.innerHTML = '<option value="">-- No Plex Selected --</option>';
+    subscriptions
+      .filter(sub => sub.type === 'Plex')
+      .forEach(sub => {
+        plexDropdown.insertAdjacentHTML(
+          'beforeend',
+          `<option value="${sub.id}">${sub.name}</option>`
+        );
+      });
+
+    // Populate IPTV Dropdown
+    const iptvDropdown = document.getElementById('editIptvSubscription');
+    iptvDropdown.innerHTML = '<option value="">-- No IPTV Selected --</option>';
+    subscriptions
+      .filter(sub => sub.type === 'IPTV')
+      .forEach(sub => {
+        iptvDropdown.insertAdjacentHTML(
+          'beforeend',
+          `<option value="${sub.id}">${sub.name}</option>`
+        );
+      });
+
+    // Populate modal fields
+    document.getElementById('editUserId').value = user.id;
+    document.getElementById('editUserName').value = user.name;
+    document.getElementById('editUserEmail').value = user.email;
+    document.getElementById('editUserOwner').value = user.owner;
+    document.getElementById('editUsername').value = user.username;
+    document.getElementById('editPassword').value = user.password;
+    document.getElementById('editImplayerInfo').value = user.implayerInfo;
+    document.getElementById('editDeviceCount').value = user.deviceCount;
+    document.getElementById('editFreeUser').checked = user.freeUser;
+
+    // Tags
+    document.getElementById('editTagPlex1').checked = user.tags.includes('Plex1');
+    document.getElementById('editTagPlex2').checked = user.tags.includes('Plex2');
+    document.getElementById('editTagIPTV').checked = user.tags.includes('IPTV');
+
+    // Clear subscription-specific fields
+    document.getElementById('editPlexExpiration').value = '';
+    document.getElementById('editRemovePlex').checked = false;
+
+    document.getElementById('editIptvExpiration').value = '';
+    document.getElementById('editRemoveIptv').checked = false;
+
+    // Show modal
+    document.getElementById('editUserModal').style.display = 'block';
+  } catch (error) {
+    console.error('Error loading user data:', error);
   }
 }
 
-document.addEventListener("DOMContentLoaded", loadUsers);
 
+
+  function closeEditUserModal() {
+    document.getElementById("editUserModal").style.display = "none";
+  }
+
+  // Update User
+async function updateUserHandler(event) {
+  event.preventDefault();
+
+  const userId = document.getElementById('editUserId').value; // Fetch user ID
+  const isFreeUser = document.getElementById('editFreeUser').checked;
+
+  const payload = {
+    id: userId,
+    name: document.getElementById('editUserName').value,
+    email: document.getElementById('editUserEmail').value,
+    owner: document.getElementById('editUserOwner').value || '',
+    username: document.getElementById('editUsername').value || '',
+    password: document.getElementById('editPassword').value || '',
+    implayerInfo: document.getElementById('editImplayerInfo').value || '',
+    deviceCount: parseInt(document.getElementById('editDeviceCount').value) || 0,
+    freeUser: isFreeUser,
+    tags: [
+      document.getElementById('editTagPlex1').checked ? 'Plex1' : null,
+      document.getElementById('editTagPlex2').checked ? 'Plex2' : null,
+      document.getElementById('editTagIPTV').checked ? 'IPTV' : null,
+    ].filter(Boolean),
+    removals: [
+      document.getElementById('editRemovePlex').checked ? 'Plex' : null,
+      document.getElementById('editRemoveIptv').checked ? 'IPTV' : null,
+      isFreeUser ? 'Plex' : null, // Automatically remove Plex if Free User is checked
+    ].filter(Boolean),
+    subscriptions: [
+      document.getElementById('editPlexSubscription').value
+        ? {
+            type: 'Plex',
+            subscriptionId: document.getElementById('editPlexSubscription').value,
+            nextRenewalDate: document.getElementById('editPlexExpiration').value || null, // Include expiration date
+          }
+        : null,
+      document.getElementById('editIptvSubscription').value
+        ? {
+            type: 'IPTV',
+            subscriptionId: document.getElementById('editIptvSubscription').value,
+            nextRenewalDate: document.getElementById('editIptvExpiration').value || null, // Include expiration date
+          }
+        : null,
+    ].filter(Boolean),
+  };
+
+  console.log('Payload:', payload); // Debugging
+
+  try {
+    const res = await fetch(`/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) throw new Error('Failed to update user');
+
+    document.getElementById('editUserModal').style.display = 'none';
+    loadUsers(); // Refresh the table
+  } catch (error) {
+    console.error('Error updating user:', error);
+  }
+}
+
+
+  // Delete User
+  async function deleteUser(userId) {
+    if (confirm("Are you sure you want to delete this user?")) {
+      try {
+        const res = await fetch(`/users/${userId}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Failed to delete user");
+
+        document.getElementById(`user-${userId}`).remove();
+      } catch (error) {
+        console.error("Error deleting user:", error);
+      }
+    }
+  }
+
+  // Filter Users by Tag
+  function filterByTag() {
+    const filterValue = document.getElementById("tagFilter").value.toLowerCase();
+    const tableRows = document.querySelectorAll("#usersTable tbody tr");
+
+    tableRows.forEach(row => {
+      const tagIcons = row.querySelectorAll(".tags img");
+      const tags = Array.from(tagIcons).map(img => img.alt.toLowerCase());
+
+      if (!filterValue || tags.includes(filterValue)) {
+        row.style.display = ""; // Show matching rows
+      } else {
+        row.style.display = "none"; // Hide non-matching rows
+      }
+    });
+  }
+
+  // Sort Table by Text
+  function sortTableByText(column) {
+    const rows = Array.from(usersTable.querySelectorAll("tr"));
+    const sortedRows = rows.sort((a, b) => {
+      const cellA = a.querySelector(`td[data-column="${column}"]`).textContent.trim().toLowerCase();
+      const cellB = b.querySelector(`td[data-column="${column}"]`).textContent.trim().toLowerCase();
+      return cellA.localeCompare(cellB);
+    });
+
+    usersTable.innerHTML = "";
+    sortedRows.forEach(row => usersTable.appendChild(row));
+  }
+
+  // Sort Table by Date
+  function sortTableByDate(column) {
+    const rows = Array.from(usersTable.querySelectorAll("tr"));
+    const sortedRows = rows.sort((a, b) => {
+      const dateA = new Date(a.querySelector(`td[data-column="${column}"]`).textContent.trim());
+      const dateB = new Date(b.querySelector(`td[data-column="${column}"]`).textContent.trim());
+      return dateA - dateB;
+    });
+
+    usersTable.innerHTML = "";
+    sortedRows.forEach(row => usersTable.appendChild(row));
+  }
+
+  // Initialize Page
+  document.addEventListener("DOMContentLoaded", loadUsers);
 </script>
+
 </body>
 </html>
+

@@ -170,39 +170,43 @@
     <a href="users.html" class="cybr-btn">Manage Users</a>
   </div>
 
-  <form id="emailForm">
-    <label for="templateSelect">Load Template:</label>
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <select id="templateSelect" style="flex: 1; height: 36px;">
-        <option value="">-- Select a Template --</option>
-      </select>
-      <button type="button" id="loadTemplate" style="height: 36px; width: 100px;">Load</button>
-    </div>
+<form id="emailForm">
+  <label for="templateSelect">Load Template:</label>
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <select id="templateSelect" style="flex: 1; height: 36px;">
+      <option value="">-- Select a Template --</option>
+    </select>
+    <button type="button" id="loadTemplate" style="height: 36px; width: 100px;">Load</button>
+  </div>
 
-    <label for="emailRecipient">Recipient:</label>
-    <input type="email" id="emailRecipient" name="recipient" multiple placeholder="email1@example.com, email2@example.com" required>
+  <label for="emailRecipient">Recipient:</label>
+  <input type="email" id="emailRecipient" name="recipient" multiple placeholder="email1@example.com, email2@example.com" required>
 
-    <label for="bccTags">BCC Users with Tags:</label>
-    <div class="bcc-tags">
-      <label><input type="checkbox" id="bccPlex1" value="Plex1"> Plex 1</label>
-      <label><input type="checkbox" id="bccPlex2" value="Plex2"> Plex 2</label>
-      <label><input type="checkbox" id="bccIPTV" value="IPTV"> IPTV</label>
-    </div>
+  <label for="emailCC">CC:</label>
+  <input type="email" id="emailCC" name="cc" multiple placeholder="cc1@example.com, cc2@example.com">
 
-    <label for="emailSubject">Subject:</label>
-    <input type="text" id="emailSubject" name="subject" required>
+  <label for="bccTags">BCC Users with Tags:</label>
+  <div class="bcc-tags">
+    <label><input type="checkbox" id="bccPlex1" value="Plex1"> Plex 1</label>
+    <label><input type="checkbox" id="bccPlex2" value="Plex2"> Plex 2</label>
+    <label><input type="checkbox" id="bccIPTV" value="IPTV"> IPTV</label>
+  </div>
 
-    <label for="emailBody">Body:</label>
-    <textarea id="emailBody" name="body" required></textarea>
+  <label for="emailSubject">Subject:</label>
+  <input type="text" id="emailSubject" name="subject" required>
 
-    <div class="button-bar">
-      <button type="button" id="saveChanges" style="width: 30%; display: none;">Save Changes</button>
-      <button type="button" id="saveTemplate" style="width: 30%;">Save as Template</button>
-      <button type="submit" id="sendEmail" style="width: 65%;">Send Email</button>
-    </div>
-  </form>
+  <label for="emailBody">Body:</label>
+  <textarea id="emailBody" name="body" required></textarea>
 
-  <p id="statusMessage"></p>
+  <div class="button-bar">
+    <button type="button" id="saveChanges" style="width: 30%; display: none;">Save Changes</button>
+    <button type="button" id="saveTemplate" style="width: 30%;">Save as Template</button>
+    <button type="submit" id="sendEmail" style="width: 65%;">Send Email</button>
+  </div>
+</form>
+
+<p id="statusMessage"></p>
+
 </body>
 </html>
 
@@ -220,11 +224,14 @@ function populateEmailForm() {
   const recipient = urlParams.get("email");
   const userId = urlParams.get("userId");
 
-  if (recipient && userId) {
+  if (recipient) {
     document.getElementById("emailRecipient").value = recipient;
+  }
+  if (userId) {
     document.getElementById("emailForm").dataset.userId = userId;
   }
 }
+
 
 async function loadTemplates() {
   try {
@@ -392,22 +399,21 @@ document.getElementById("emailForm").addEventListener("submit", async (event) =>
   event.preventDefault();
 
   const recipient = document.getElementById("emailRecipient").value.trim();
-  const recipientsArray = recipient.split(",").map(email => email.trim());
-  const selectedTemplateOption = document.getElementById("templateSelect").selectedOptions[0];
-  const templateName = selectedTemplateOption?.textContent || "N/A";
-  const userId = document.getElementById("emailForm").dataset.userId;
+  const cc = document.getElementById("emailCC").value.trim(); // Fetch CC field value
+  const bccTags = Array.from(document.querySelectorAll(".bcc-tags input:checked")).map(el => el.value);
+  const subject = document.getElementById("emailSubject").value.trim();
+  const body = document.getElementById("emailBody").value.trim();
 
   const payload = {
-    recipient: recipientsArray.join(","), // Pass all recipients as a single comma-separated string
-    subject: document.getElementById("emailSubject").value,
-    body: document.getElementById("emailBody").value,
-    userId: userId || null, // Pass userId if present (from pre-filled data)
-    bccTags: Array.from(document.querySelectorAll(".bcc-tags input:checked")).map(el => el.value),
+    recipient: recipient,
+    cc: cc || null, // Include CC in the payload
+    subject: subject,
+    body: body,
+    bccTags: bccTags,
   };
 
   console.log("Payload to be Sent:", payload);
 
-  // Send email
   try {
     const emailResponse = await fetch("/emails/send", {
       method: "POST",
@@ -416,12 +422,14 @@ document.getElementById("emailForm").addEventListener("submit", async (event) =>
     });
 
     if (!emailResponse.ok) throw new Error("Failed to send email");
+
     document.getElementById("statusMessage").textContent = "Email sent successfully!";
   } catch (error) {
     console.error("Error sending email:", error);
     document.getElementById("statusMessage").textContent = "Error sending email.";
   }
 });
+
 
 
 </script>
